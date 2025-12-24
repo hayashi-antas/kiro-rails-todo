@@ -23,6 +23,11 @@ Rails.application.routes.draw do
     # Session management
     post :logout, to: 'sessions#destroy'
     
-    # Todo routes will be added later
+    # Todo routes
+    resources :todos, except: [:new, :edit] do
+      collection do
+        patch :reorder
+      end
+    end
   end
 end
