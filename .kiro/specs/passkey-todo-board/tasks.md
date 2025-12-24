@@ -8,22 +8,22 @@
   - Install required npm packages: React, TypeScript, dnd-kit
   - _Requirements: All requirements depend on proper project setup_
 
-- [ ] 2. Create database models and migrations
+- [x] 2. Create database models and migrations
   - Create User model with minimal fields (id, timestamps)
   - Create Credential model for WebAuthn data storage
   - Create Todo model with user association, title, status, position
   - Add database constraints and indexes for data integrity
   - _Requirements: 1.2, 3.1, 4.1, 5.1, 6.1, 10.4_
 
-- [ ] 2.1 Write property test for User model
+- [x] 2.1 Write property test for User model
   - **Property 14: Credential Storage Security**
   - **Validates: Requirements 9.2**
 
-- [ ] 2.2 Write property test for Todo model validation
+- [x] 2.2 Write property test for Todo model validation
   - **Property 4: Input Validation**
   - **Validates: Requirements 3.3**
 
-- [ ] 2.3 Write unit tests for model associations and validations
+- [x] 2.3 Write unit tests for model associations and validations
   - Test User-Credential associations
   - Test User-Todo associations
   - Test Todo validation rules
