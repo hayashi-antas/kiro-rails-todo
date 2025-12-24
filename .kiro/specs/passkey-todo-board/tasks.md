@@ -81,30 +81,30 @@
   - Test logout functionality
   - _Requirements: 3.5, 7.1, 7.3, 10.5_
 
-- [ ] 5. Implement Todo CRUD API endpoints
+- [x] 5. Implement Todo CRUD API endpoints
   - Create Todo controller with index, create, update, destroy actions
   - Implement proper authorization for user data isolation
   - Add position assignment logic for new todos
   - Handle validation errors and return appropriate responses
   - _Requirements: 3.1, 3.2, 3.4, 4.1, 4.2, 5.1, 10.1, 10.2, 10.3, 10.4_
 
-- [ ] 5.1 Write property test for todo creation and persistence
+- [x] 5.1 Write property test for todo creation and persistence
   - **Property 3: Todo Creation and Persistence**
   - **Validates: Requirements 3.1, 3.2, 3.4**
 
-- [ ] 5.2 Write property test for todo modification persistence
+- [x] 5.2 Write property test for todo modification persistence
   - **Property 5: Todo Modification Persistence**
   - **Validates: Requirements 4.1, 4.2**
 
-- [ ] 5.3 Write property test for data isolation
+- [x] 5.3 Write property test for data isolation
   - **Property 6: Data Isolation**
   - **Validates: Requirements 4.3, 5.3, 10.1, 10.2, 10.3, 10.4**
 
-- [ ] 5.4 Write property test for todo deletion and position integrity
+- [x] 5.4 Write property test for todo deletion and position integrity
   - **Property 8: Todo Deletion and Position Integrity**
   - **Validates: Requirements 5.1, 5.2**
 
-- [ ] 5.5 Write unit tests for Todo controller
+- [x] 5.5 Write unit tests for Todo controller
   - Test CRUD operations with proper authorization
   - Test validation error handling
   - Test JSON response formats
