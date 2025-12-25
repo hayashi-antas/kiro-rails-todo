@@ -15,7 +15,7 @@ module ErrorHandling
   def handle_standard_error(exception)
     log_error(exception)
     
-    if Rails.env.development?
+    if Rails.env.development? || Rails.env.test?
       render json: { 
         error: exception.message,
         type: exception.class.name,

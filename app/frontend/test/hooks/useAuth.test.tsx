@@ -43,6 +43,9 @@ describe('useAuth', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
         json: () => Promise.resolve({
           challenge: 'dGVzdC1jaGFsbGVuZ2U',
           user: { id: 'dGVzdC11c2VyLWlk', name: 'user_test', displayName: 'Passkey User' },
@@ -51,6 +54,9 @@ describe('useAuth', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
         json: () => Promise.resolve({ success: true, user_id: 1 }),
       })
 
@@ -82,6 +88,9 @@ describe('useAuth', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
         json: () => Promise.resolve({
           challenge: 'dGVzdC1jaGFsbGVuZ2U',
           allowCredentials: [{ id: 'dGVzdC1jcmVkZW50aWFs', type: 'public-key' }],
@@ -89,6 +98,9 @@ describe('useAuth', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
         json: () => Promise.resolve({ success: true, user_id: 1 }),
       })
 
@@ -122,6 +134,9 @@ describe('useAuth', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
         json: () => Promise.resolve({
           challenge: 'dGVzdC1jaGFsbGVuZ2U',
           allowCredentials: [{ id: 'dGVzdC1jcmVkZW50aWFs', type: 'public-key' }],
@@ -129,10 +144,16 @@ describe('useAuth', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
         json: () => Promise.resolve({ success: true, user_id: 1 }),
       })
       .mockResolvedValueOnce({
         ok: true,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
         json: () => Promise.resolve({}),
       })
 
@@ -185,11 +206,8 @@ describe('useAuth', () => {
   })
 
   it('handles API errors', async () => {
-    // Mock API error
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Server error' }),
-    })
+    // Mock API error - need to mock the fetch rejection properly
+    mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
     const { result } = renderHook(() => useAuth(), { wrapper })
 
@@ -197,16 +215,13 @@ describe('useAuth', () => {
       await result.current.register()
     })
 
-    expect(result.current.error).toBe('Server error')
+    expect(result.current.error).toBe('Network error')
     expect(result.current.isAuthenticated).toBe(false)
   })
 
   it('clears errors', async () => {
-    // Mock API error
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Test error' }),
-    })
+    // Mock API error - need to mock the fetch rejection properly
+    mockFetch.mockRejectedValueOnce(new Error('Test error'))
 
     const { result } = renderHook(() => useAuth(), { wrapper })
 

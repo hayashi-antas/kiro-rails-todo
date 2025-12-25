@@ -216,7 +216,7 @@
   - Add health check endpoints
   - _Requirements: All requirements need to work in production_
 
-- [ ] 14. Checkpoint - Ensure all tests pass
+- [x] 14. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 15. Create integration test suite

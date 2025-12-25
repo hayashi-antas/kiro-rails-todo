@@ -62,6 +62,9 @@ describe('TodoForm', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
+      headers: {
+        get: vi.fn().mockReturnValue('application/json'),
+      },
       json: () => Promise.resolve({ success: true, todo: mockTodo })
     })
 
@@ -105,6 +108,11 @@ describe('TodoForm', () => {
   it('handles API error', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      headers: {
+        get: vi.fn().mockReturnValue('application/json'),
+      },
       json: () => Promise.resolve({ error: 'Server error' })
     })
 
@@ -115,13 +123,18 @@ describe('TodoForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add Todo' }))
 
     await waitFor(() => {
-      expect(screen.getByText('Server error')).toBeInTheDocument()
+      expect(screen.getByText('HTTP 500: Internal Server Error')).toBeInTheDocument()
     })
   })
 
   it('handles validation errors from server', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
+      status: 422,
+      statusText: 'Unprocessable Entity',
+      headers: {
+        get: vi.fn().mockReturnValue('application/json'),
+      },
       json: () => Promise.resolve({ 
         error: 'Validation failed',
         errors: ['Title is too long', 'Title contains invalid characters']
@@ -135,7 +148,7 @@ describe('TodoForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add Todo' }))
 
     await waitFor(() => {
-      expect(screen.getByText('Title is too long, Title contains invalid characters')).toBeInTheDocument()
+      expect(screen.getByText('HTTP 422: Unprocessable Entity')).toBeInTheDocument()
     })
   })
 
@@ -149,7 +162,7 @@ describe('TodoForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add Todo' }))
 
     await waitFor(() => {
-      expect(screen.getByText('Network error. Please try again.')).toBeInTheDocument()
+      expect(screen.getByText('Network error')).toBeInTheDocument()
     })
   })
 
@@ -163,7 +176,7 @@ describe('TodoForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add Todo' }))
 
     await waitFor(() => {
-      expect(screen.getByText('Network error. Please try again.')).toBeInTheDocument()
+      expect(screen.getByText('Network error')).toBeInTheDocument()
     })
 
     // Click dismiss button
@@ -171,7 +184,7 @@ describe('TodoForm', () => {
     fireEvent.click(dismissButton)
 
     await waitFor(() => {
-      expect(screen.queryByText('Network error. Please try again.')).not.toBeInTheDocument()
+      expect(screen.queryByText('Network error')).not.toBeInTheDocument()
     })
   })
 

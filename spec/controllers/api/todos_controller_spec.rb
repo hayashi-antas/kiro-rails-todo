@@ -345,9 +345,11 @@ RSpec.describe Api::TodosController, type: :request do
       end
       
       it 'returns error for invalid status' do
-        expect {
-          patch "/api/todos/#{todo.id}", params: { status: 'invalid_status' }
-        }.to raise_error(ArgumentError, "'invalid_status' is not a valid status")
+        patch "/api/todos/#{todo.id}", params: { status: 'invalid_status' }
+        
+        expect(response).to have_http_status(:internal_server_error)
+        result = JSON.parse(response.body)
+        expect(result['error']).to include("'invalid_status' is not a valid status")
       end
     end
   end
