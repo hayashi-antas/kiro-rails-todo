@@ -26,11 +26,13 @@ RUN apt-get update -qq && \
 
 # Set development environment
 ENV RAILS_ENV="development" \
-    BUNDLE_PATH="/usr/local/bundle"
+    BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_WITHOUT=""
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./
-RUN bundle install
+RUN bundle install && \
+    bundle binstubs --all
 
 # Install Node.js dependencies
 COPY package.json package-lock.json ./
@@ -39,8 +41,11 @@ RUN npm install
 # Copy application code
 COPY . .
 
+# Create necessary directories
+RUN mkdir -p tmp/pids tmp/cache tmp/sockets log
+
 # Expose port
 EXPOSE 3000
 
-# Start server
+# Start server with proper signal handling
 CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0", "-p", "3000"]
