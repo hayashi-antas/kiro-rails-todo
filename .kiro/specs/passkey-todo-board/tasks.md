@@ -173,7 +173,7 @@
   - Test error recovery and state rollback
   - _Requirements: 6.1, 6.2, 6.4_
 
-- [ ] 10. Create application routing and layout
+- [x] 10. Create application routing and layout
   - Set up React Router for navigation
   - Create main application layout with navigation
   - Implement protected route components
@@ -181,7 +181,7 @@
   - Create account page with basic user information
   - _Requirements: 2.3, 7.1, 7.2_
 
-- [ ] 10.1 Write unit tests for routing and layout
+- [x] 10.1 Write unit tests for routing and layout
   - Test protected route behavior
   - Test navigation and logout functionality
   - Test layout component rendering

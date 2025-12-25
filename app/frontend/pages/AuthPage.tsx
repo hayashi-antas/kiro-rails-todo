@@ -1,98 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { PasskeyRegistration } from '../components/PasskeyRegistration';
 import { PasskeyAuthentication } from '../components/PasskeyAuthentication';
-import { TodoList } from '../components/TodoList';
 import { useAuth } from '../hooks/useAuth';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // If already authenticated, show the todo list
+  // Redirect to intended page or home when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = (location.state as any)?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
+
+  // Don't render anything if authenticated (will redirect)
   if (isAuthenticated) {
-    return (
-      <div className="app-page">
-        <header className="app-header">
-          <div className="header-content">
-            <h1>Passkey ToDo Board</h1>
-            <div className="header-actions">
-              <span className="user-info">User #{user?.id}</span>
-              <button
-                type="button"
-                onClick={logout}
-                className="logout-button"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </header>
-        
-        <main className="app-main">
-          <TodoList />
-        </main>
-
-        <style jsx>{`
-          .app-page {
-            min-height: 100vh;
-            background: #f6f8fa;
-          }
-
-          .app-header {
-            background: white;
-            border-bottom: 1px solid #e1e5e9;
-            padding: 1rem 0;
-          }
-
-          .header-content {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 0 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-          }
-
-          .header-content h1 {
-            margin: 0;
-            color: #24292f;
-            font-size: 1.5rem;
-            font-weight: 600;
-          }
-
-          .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-          }
-
-          .user-info {
-            color: #656d76;
-            font-size: 0.875rem;
-          }
-
-          .logout-button {
-            padding: 0.5rem 1rem;
-            border: 1px solid #d1d9e0;
-            border-radius: 6px;
-            background: white;
-            color: #24292f;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-
-          .logout-button:hover {
-            background: #f6f8fa;
-            border-color: #bbb;
-          }
-
-          .app-main {
-            padding: 2rem 0;
-          }
-        `}</style>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -231,24 +159,6 @@ export function AuthPage() {
 
         .link-button:hover {
           opacity: 0.8;
-        }
-
-        .success-message {
-          background: white;
-          padding: 3rem 2rem;
-          border-radius: 8px;
-          text-align: center;
-        }
-
-        .success-message h2 {
-          margin: 0 0 1rem 0;
-          color: #1f883d;
-          font-size: 1.5rem;
-        }
-
-        .success-message p {
-          margin: 0;
-          color: #656d76;
         }
       `}</style>
     </div>
