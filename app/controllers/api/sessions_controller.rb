@@ -1,6 +1,6 @@
 class Api::SessionsController < ApplicationController
-  protect_from_forgery with: :null_session
-  
+  # protect_from_forgery with: :null_session
+    skip_before_action :verify_authenticity_token, only: :destroy
   # POST /api/logout
   def destroy
     begin

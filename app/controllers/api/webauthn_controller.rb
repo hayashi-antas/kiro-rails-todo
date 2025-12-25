@@ -1,42 +1,52 @@
 class Api::WebauthnController < ApplicationController
-  protect_from_forgery with: :null_session
+  skip_before_action :verify_authenticity_token,
+                    only: %i[
+                      registration_options
+                      registration_verify
+                      authentication_options
+                      authentication_verify
+                    ]
+
   before_action :set_webauthn_origin
-  
   # POST /api/webauthn/registration/options
   def registration_options
-    # Generate a new challenge for registration
-    challenge = WebAuthn.generate_user_id
-    
-    # Store challenge in session for verification
-    session[:webauthn_challenge] = challenge
-    session[:webauthn_challenge_expires_at] = 5.minutes.from_now
-    
+    # user_handle（ユーザー固有ID）を生成
+    user_handle = WebAuthn.generate_user_id
+
     # Create registration options
     options = WebAuthn::Credential.options_for_create(
       user: {
-        id: challenge,
+        id: user_handle,
         name: "user_#{SecureRandom.hex(8)}",
         display_name: "Passkey User"
       },
       exclude: []
     )
-    
+
+    # ✅ ここが重要：実際にブラウザへ渡す options.challenge をセッションに保存する
+    session[:webauthn_challenge] = options.challenge
+    session[:webauthn_challenge_expires_at] = 5.minutes.from_now
+
+    # ついでに user_handle も覚えておきたいなら（今は使ってないけど）
+    session[:webauthn_user_handle] = user_handle
+
     render json: options
   rescue => e
     Rails.logger.error "WebAuthn registration options error: #{e.message}"
     render json: { error: "Failed to generate registration options" }, status: :internal_server_error
   end
-  
+
+
   # POST /api/webauthn/registration/verify
   def registration_verify
     challenge = session[:webauthn_challenge]
     challenge_expires_at = session[:webauthn_challenge_expires_at]
-    
+
     # Validate challenge exists and hasn't expired
     if challenge.blank? || challenge_expires_at.blank? || Time.current > challenge_expires_at
       return render json: { error: "Invalid or expired challenge" }, status: :bad_request
     end
-    
+
     begin
       # Verify the WebAuthn credential
       webauthn_credential = WebAuthn::Credential.from_create(
