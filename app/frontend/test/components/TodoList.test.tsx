@@ -3,6 +3,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { TodoList } from '../../components/TodoList'
 import { Todo } from '../../types/todo'
 
+// Type declaration for the global helper
+declare global {
+  function createMockResponse(options: {
+    ok: boolean
+    status?: number
+    statusText?: string
+    headers?: Record<string, string>
+    json?: () => Promise<any>
+    text?: () => Promise<string>
+  }): Response
+}
+
 // Mock fetch
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -48,10 +60,11 @@ describe('TodoList', () => {
   })
 
   it('loads and displays todos successfully', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: mockTodos })
-    })
+    }))
 
     render(<TodoList />)
 
@@ -75,10 +88,11 @@ describe('TodoList', () => {
   })
 
   it('shows empty state when no todos', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: [] })
-    })
+    }))
 
     render(<TodoList />)
 
@@ -91,10 +105,11 @@ describe('TodoList', () => {
   })
 
   it('handles API error', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: false,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ error: 'Failed to load todos' })
-    })
+    }))
 
     render(<TodoList />)
 
@@ -117,10 +132,11 @@ describe('TodoList', () => {
 
   it('retries loading on retry button click', async () => {
     // First call fails
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: false,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ error: 'Server error' })
-    })
+    }))
 
     render(<TodoList />)
 
@@ -129,10 +145,11 @@ describe('TodoList', () => {
     })
 
     // Second call succeeds
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: mockTodos })
-    })
+    }))
 
     const retryButton = screen.getByRole('button', { name: 'Retry' })
     fireEvent.click(retryButton)
@@ -162,10 +179,11 @@ describe('TodoList', () => {
   })
 
   it('filters todos correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: mockTodos })
-    })
+    }))
 
     render(<TodoList />)
 
@@ -200,10 +218,11 @@ describe('TodoList', () => {
   it('shows appropriate empty state for filters', async () => {
     const openOnlyTodos = mockTodos.filter(todo => todo.status === 'open')
     
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: openOnlyTodos })
-    })
+    }))
 
     render(<TodoList />)
 
@@ -220,10 +239,13 @@ describe('TodoList', () => {
 
   it('adds new todo to list', async () => {
     // Initial load
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ todos: [] })
-    })
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ok: true,
+        headers: { 'content-type': 'application/json' },
+        json: () => Promise.resolve({ todos: [] })
+      })
+    )
 
     render(<TodoList />)
 
@@ -240,10 +262,13 @@ describe('TodoList', () => {
       created_at: '2024-01-01T10:00:00Z'
     }
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ success: true, todo: newTodo })
-    })
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ok: true,
+        headers: { 'content-type': 'application/json' },
+        json: () => Promise.resolve({ success: true, todo: newTodo })
+      })
+    )
 
     // Add new todo through form
     const input = screen.getByPlaceholderText('What needs to be done?')
@@ -258,10 +283,11 @@ describe('TodoList', () => {
   })
 
   it('updates todo in list', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: [mockTodos[0]] })
-    })
+    }))
 
     render(<TodoList />)
 
@@ -271,10 +297,11 @@ describe('TodoList', () => {
 
     // Mock todo update
     const updatedTodo = { ...mockTodos[0], status: 'done' as const }
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ success: true, todo: updatedTodo })
-    })
+    }))
 
     // Toggle status
     const statusButton = screen.getByLabelText('Mark as done')
@@ -286,10 +313,11 @@ describe('TodoList', () => {
   })
 
   it('removes deleted todo from list', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: [mockTodos[0]] })
-    })
+    }))
 
     // Mock confirm dialog
     global.confirm = vi.fn().mockReturnValue(true)
@@ -301,10 +329,11 @@ describe('TodoList', () => {
     })
 
     // Mock todo deletion
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ success: true })
-    })
+    }))
 
     // Delete todo
     const deleteButton = screen.getByLabelText('Delete todo')
@@ -318,10 +347,11 @@ describe('TodoList', () => {
   })
 
   it('shows loading overlay during background operations', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ todos: [mockTodos[0]] })
-    })
+    }))
 
     render(<TodoList />)
 

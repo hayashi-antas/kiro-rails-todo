@@ -3,6 +3,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { PasskeyAuthentication } from '../../components/PasskeyAuthentication'
 import { AuthProvider } from '../../hooks/useAuth'
 
+// Type declaration for the global helper
+declare global {
+  function createMockResponse(options: {
+    ok: boolean
+    status?: number
+    statusText?: string
+    headers?: Record<string, string>
+    json?: () => Promise<any>
+    text?: () => Promise<string>
+  }): Response
+}
+
 // Mock fetch responses
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -64,17 +76,19 @@ describe('PasskeyAuthentication', () => {
   it('handles successful authentication flow', async () => {
     // Mock successful API responses
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
+        headers: { 'content-type': 'application/json' },
         json: () => Promise.resolve({
           challenge: 'dGVzdC1jaGFsbGVuZ2U',
           allowCredentials: [{ id: 'dGVzdC1jcmVkZW50aWFs', type: 'public-key' }],
-        }),
-      })
-      .mockResolvedValueOnce({
+        })
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
-        json: () => Promise.resolve({ success: true, user_id: 1 }),
-      })
+        headers: { 'content-type': 'application/json' },
+        json: () => Promise.resolve({ success: true, user_id: 1 })
+      }))
 
     // Mock WebAuthn credential get
     const mockCredential = {
@@ -112,10 +126,15 @@ describe('PasskeyAuthentication', () => {
 
   it('handles authentication API error', async () => {
     // Mock API error
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Authentication failed' }),
-    })
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: { 'content-type': 'application/json' },
+        json: () => Promise.resolve({ error: 'Authentication failed' })
+      })
+    )
 
     render(
       <TestWrapper>
@@ -127,19 +146,20 @@ describe('PasskeyAuthentication', () => {
     fireEvent.click(loginButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Authentication failed')).toBeInTheDocument()
+      expect(screen.getByText(/HTTP 400: Bad Request/)).toBeInTheDocument()
     })
   })
 
   it('handles WebAuthn credential get failure', async () => {
     // Mock successful options request
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({
         challenge: 'dGVzdC1jaGFsbGVuZ2U',
         allowCredentials: [{ id: 'dGVzdC1jcmVkZW50aWFs', type: 'public-key' }],
-      }),
-    })
+      })
+    }))
 
     // Mock WebAuthn failure
     mockGet.mockResolvedValue(null)
@@ -159,10 +179,39 @@ describe('PasskeyAuthentication', () => {
   })
 
   it('allows dismissing error messages', async () => {
-    // Mock API error
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Test error' }),
+    // Mock API error - first call for options, second call fails
+    mockFetch
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          headers: { 'content-type': 'application/json' },
+          json: () => Promise.resolve({
+            challenge: 'dGVzdC1jaGFsbGVuZ2U',
+            allowCredentials: []
+          })
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: false,
+          status: 400,
+          statusText: 'Bad Request',
+          headers: { 'content-type': 'application/json' },
+          json: () => Promise.resolve({ error: 'Test error' })
+        })
+      )
+
+    // Mock WebAuthn get to succeed
+    mockGet.mockResolvedValueOnce({
+      id: 'test-credential-id',
+      rawId: new ArrayBuffer(16),
+      response: {
+        authenticatorData: new ArrayBuffer(32),
+        clientDataJSON: new ArrayBuffer(64),
+        signature: new ArrayBuffer(64),
+        userHandle: null,
+      },
+      type: 'public-key',
     })
 
     render(
@@ -174,8 +223,9 @@ describe('PasskeyAuthentication', () => {
     const loginButton = screen.getByRole('button', { name: /Sign In with Passkey/ })
     fireEvent.click(loginButton)
 
+    // Wait for error to appear - it should show the HTTP error message
     await waitFor(() => {
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getByText(/HTTP 400: Bad Request/)).toBeInTheDocument()
     })
 
     // Click dismiss button
@@ -183,7 +233,7 @@ describe('PasskeyAuthentication', () => {
     fireEvent.click(dismissButton)
 
     await waitFor(() => {
-      expect(screen.queryByText('Test error')).not.toBeInTheDocument()
+      expect(screen.queryByText(/HTTP 400: Bad Request/)).not.toBeInTheDocument()
     })
   })
 

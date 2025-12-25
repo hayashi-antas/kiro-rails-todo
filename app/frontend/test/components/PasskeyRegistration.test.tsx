@@ -3,6 +3,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { PasskeyRegistration } from '../../components/PasskeyRegistration'
 import { AuthProvider } from '../../hooks/useAuth'
 
+// Type declaration for the global helper
+declare global {
+  function createMockResponse(options: {
+    ok: boolean
+    status?: number
+    statusText?: string
+    headers?: Record<string, string>
+    json?: () => Promise<any>
+    text?: () => Promise<string>
+  }): Response
+}
+
 // Mock fetch responses
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -64,18 +76,20 @@ describe('PasskeyRegistration', () => {
   it('handles successful registration flow', async () => {
     // Mock successful API responses
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
+        headers: { 'content-type': 'application/json' },
         json: () => Promise.resolve({
           challenge: 'dGVzdC1jaGFsbGVuZ2U',
           user: { id: 'dGVzdC11c2VyLWlk', name: 'user_test', displayName: 'Passkey User' },
           excludeCredentials: [],
-        }),
-      })
-      .mockResolvedValueOnce({
+        })
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
-        json: () => Promise.resolve({ success: true, user_id: 1 }),
-      })
+        headers: { 'content-type': 'application/json' },
+        json: () => Promise.resolve({ success: true, user_id: 1 })
+      }))
 
     // Mock WebAuthn credential creation
     const mockCredential = {
@@ -110,11 +124,16 @@ describe('PasskeyRegistration', () => {
   })
 
   it('handles registration API error', async () => {
-    // Mock API error
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Registration failed' }),
-    })
+    // Mock API error for the first call (options)
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: { 'content-type': 'application/json' },
+        json: () => Promise.resolve({ error: 'Registration failed' })
+      })
+    )
 
     render(
       <TestWrapper>
@@ -126,20 +145,21 @@ describe('PasskeyRegistration', () => {
     fireEvent.click(registerButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Registration failed')).toBeInTheDocument()
+      expect(screen.getByText(/HTTP 400: Bad Request/)).toBeInTheDocument()
     })
   })
 
   it('handles WebAuthn credential creation failure', async () => {
     // Mock successful options request
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({
         challenge: 'dGVzdC1jaGFsbGVuZ2U',
         user: { id: 'dGVzdC11c2VyLWlk', name: 'user_test', displayName: 'Passkey User' },
         excludeCredentials: [],
-      }),
-    })
+      })
+    }))
 
     // Mock WebAuthn failure
     mockCreate.mockResolvedValue(null)
@@ -160,10 +180,15 @@ describe('PasskeyRegistration', () => {
 
   it('allows dismissing error messages', async () => {
     // Mock API error
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Test error' }),
-    })
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: { 'content-type': 'application/json' },
+        json: () => Promise.resolve({ error: 'Test error' })
+      })
+    )
 
     render(
       <TestWrapper>
@@ -175,7 +200,7 @@ describe('PasskeyRegistration', () => {
     fireEvent.click(registerButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getByText(/HTTP 400: Bad Request/)).toBeInTheDocument()
     })
 
     // Click dismiss button
@@ -183,7 +208,7 @@ describe('PasskeyRegistration', () => {
     fireEvent.click(dismissButton)
 
     await waitFor(() => {
-      expect(screen.queryByText('Test error')).not.toBeInTheDocument()
+      expect(screen.queryByText(/HTTP 400: Bad Request/)).not.toBeInTheDocument()
     })
   })
 

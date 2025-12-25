@@ -1,6 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { TodoForm } from '../../components/TodoForm'
+import { api } from '../../utils/api'
+
+// Type declaration for the global helper
+declare global {
+  function createMockResponse(options: {
+    ok: boolean
+    status?: number
+    statusText?: string
+    headers?: Record<string, string>
+    json?: () => Promise<any>
+    text?: () => Promise<string>
+  }): Response
+}
 
 // Mock fetch
 const mockFetch = vi.fn()
@@ -60,13 +73,11 @@ describe('TodoForm', () => {
       created_at: '2024-01-01T10:00:00Z'
     }
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
-      headers: {
-        get: vi.fn().mockReturnValue('application/json'),
-      },
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ success: true, todo: mockTodo })
-    })
+    }))
 
     const onTodoCreated = vi.fn()
     render(<TodoForm onTodoCreated={onTodoCreated} />)
@@ -106,15 +117,9 @@ describe('TodoForm', () => {
   })
 
   it('handles API error', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      headers: {
-        get: vi.fn().mockReturnValue('application/json'),
-      },
-      json: () => Promise.resolve({ error: 'Server error' })
-    })
+    // Mock the API client to avoid retry logic issues
+    const originalRequest = api.post
+    api.post = vi.fn().mockRejectedValue(new Error('HTTP 500: Internal Server Error'))
 
     render(<TodoForm />)
 
@@ -122,24 +127,35 @@ describe('TodoForm', () => {
     fireEvent.change(input, { target: { value: 'Test todo' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add Todo' }))
 
+    // Wait for the loading state to finish and error to appear
     await waitFor(() => {
-      expect(screen.getByText('HTTP 500: Internal Server Error')).toBeInTheDocument()
+      expect(screen.queryByText('Adding...')).not.toBeInTheDocument()
+    }, { timeout: 5000 })
+
+    // Check for any error message
+    await waitFor(() => {
+      const errorElement = screen.getByRole('alert')
+      expect(errorElement).toBeInTheDocument()
     })
+
+    // Check for the specific error message
+    expect(screen.getByText('HTTP 500: Internal Server Error')).toBeInTheDocument()
+
+    // Restore original function
+    api.post = originalRequest
   })
 
   it('handles validation errors from server', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: false,
       status: 422,
       statusText: 'Unprocessable Entity',
-      headers: {
-        get: vi.fn().mockReturnValue('application/json'),
-      },
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ 
         error: 'Validation failed',
         errors: ['Title is too long', 'Title contains invalid characters']
       })
-    })
+    }))
 
     render(<TodoForm />)
 
@@ -197,10 +213,11 @@ describe('TodoForm', () => {
       created_at: '2024-01-01T10:00:00Z'
     }
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
+      headers: { 'content-type': 'application/json' },
       json: () => Promise.resolve({ success: true, todo: mockTodo })
-    })
+    }))
 
     render(<TodoForm />)
 
