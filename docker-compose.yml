@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "3000:3000"
+      - "3036:3036"  # Vite development server
     depends_on:
       db:
         condition: service_healthy
@@ -11,6 +12,8 @@ services:
       - RAILS_ENV=development
       - WEBAUTHN_ORIGIN=http://localhost:3000
       - WEBAUTHN_RP_ID=localhost
+      - VITE_RUBY_HOST=0.0.0.0
+      - VITE_RUBY_PORT=3036
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle

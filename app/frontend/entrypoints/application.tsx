@@ -7,17 +7,8 @@ import { TodoPage } from '../pages/TodoPage'
 import { AccountPage } from '../pages/AccountPage'
 import { Layout } from '../components/Layout'
 import { ProtectedRoute } from '../components/ProtectedRoute'
-
-import React from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from '../hooks/useAuth'
-import { AuthPage } from '../pages/AuthPage'
-import { TodoPage } from '../pages/TodoPage'
-import { AccountPage } from '../pages/AccountPage'
-import { Layout } from '../components/Layout'
-import { ProtectedRoute } from '../components/ProtectedRoute'
 import { ErrorBoundary } from '../components/ErrorBoundary'
+import './application.css'
 
 const App: React.FC = () => {
   return (
@@ -51,4 +42,6 @@ const container = document.getElementById('root')
 if (container) {
   const root = createRoot(container)
   root.render(<App />)
+} else {
+  console.error('Root element not found! Make sure there is a <div id="root"></div> in your HTML')
 }
