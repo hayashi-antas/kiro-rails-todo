@@ -14,37 +14,37 @@ module ErrorHandling
 
   def handle_standard_error(exception)
     log_error(exception)
-    
+
     if Rails.env.development? || Rails.env.test?
-      render json: { 
+      render json: {
         error: exception.message,
         type: exception.class.name,
         backtrace: exception.backtrace&.first(10)
       }, status: :internal_server_error
     else
-      render json: { 
-        error: 'An unexpected error occurred. Please try again.' 
+      render json: {
+        error: "An unexpected error occurred. Please try again."
       }, status: :internal_server_error
     end
   end
 
   def handle_not_found(exception)
     log_error(exception, level: :warn)
-    render json: { error: 'Resource not found' }, status: :not_found
+    render json: { error: "Resource not found" }, status: :not_found
   end
 
   def handle_validation_error(exception)
     log_error(exception, level: :warn)
-    render json: { 
-      error: 'Validation failed',
+    render json: {
+      error: "Validation failed",
       errors: exception.record.errors.full_messages
     }, status: :unprocessable_entity
   end
 
   def handle_parameter_missing(exception)
     log_error(exception, level: :warn)
-    render json: { 
-      error: "Missing required parameter: #{exception.param}" 
+    render json: {
+      error: "Missing required parameter: #{exception.param}"
     }, status: :bad_request
   end
 
@@ -90,7 +90,7 @@ module ErrorHandling
   def render_error(message, status: :unprocessable_entity, errors: nil)
     response_data = { error: message }
     response_data[:errors] = errors if errors.present?
-    
+
     render json: response_data, status: status
   end
 
@@ -98,7 +98,7 @@ module ErrorHandling
     response_data = { success: true }
     response_data[:message] = message if message
     response_data.merge!(data)
-    
+
     render json: response_data
   end
 end

@@ -71,9 +71,9 @@ RSpec.describe 'ErrorHandling concern', type: :controller do
   describe 'error handling' do
     it 'handles StandardError with generic message in production' do
       allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new('production'))
-      
+
       get :raise_standard_error
-      
+
       expect(response).to have_http_status(:internal_server_error)
       json_response = JSON.parse(response.body)
       expect(json_response['error']).to eq('An unexpected error occurred. Please try again.')
@@ -83,9 +83,9 @@ RSpec.describe 'ErrorHandling concern', type: :controller do
 
     it 'handles StandardError with detailed message in development' do
       allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new('development'))
-      
+
       get :raise_standard_error
-      
+
       expect(response).to have_http_status(:internal_server_error)
       json_response = JSON.parse(response.body)
       expect(json_response['error']).to eq('Test standard error')
@@ -95,7 +95,7 @@ RSpec.describe 'ErrorHandling concern', type: :controller do
 
     it 'handles ActiveRecord::RecordNotFound' do
       get :raise_not_found
-      
+
       expect(response).to have_http_status(:not_found)
       json_response = JSON.parse(response.body)
       expect(json_response['error']).to eq('Resource not found')
@@ -103,7 +103,7 @@ RSpec.describe 'ErrorHandling concern', type: :controller do
 
     it 'handles ActiveRecord::RecordInvalid' do
       get :raise_validation_error
-      
+
       expect(response).to have_http_status(:unprocessable_entity)
       json_response = JSON.parse(response.body)
       expect(json_response['error']).to eq('Validation failed')
@@ -113,7 +113,7 @@ RSpec.describe 'ErrorHandling concern', type: :controller do
 
     it 'handles ActionController::ParameterMissing' do
       get :raise_parameter_missing
-      
+
       expect(response).to have_http_status(:bad_request)
       json_response = JSON.parse(response.body)
       expect(json_response['error']).to include('Missing required parameter')
@@ -152,18 +152,18 @@ RSpec.describe 'ErrorHandling concern', type: :controller do
 
     it 'renders error responses' do
       expect(controller).to receive(:render).with(
-        json: { error: 'Test error message', errors: ['Error 1', 'Error 2'] },
+        json: { error: 'Test error message', errors: [ 'Error 1', 'Error 2' ] },
         status: :bad_request
       )
-      
-      controller.send(:render_error, 'Test error message', status: :bad_request, errors: ['Error 1', 'Error 2'])
+
+      controller.send(:render_error, 'Test error message', status: :bad_request, errors: [ 'Error 1', 'Error 2' ])
     end
 
     it 'renders success responses' do
       expect(controller).to receive(:render).with(
         json: { success: true, message: 'Success message', data: 'test' }
       )
-      
+
       controller.send(:render_success, { data: 'test' }, message: 'Success message')
     end
   end

@@ -1,5 +1,5 @@
 class Api::SessionsController < ApplicationController
-  # protect_from_forgery with: :null_session
+    # protect_from_forgery with: :null_session
     skip_before_action :verify_authenticity_token, only: :destroy
   # POST /api/logout
   def destroy
@@ -7,7 +7,7 @@ class Api::SessionsController < ApplicationController
       session.delete(:user_id)
       session.delete(:authenticated_at)
       reset_session
-      
+
       render json: { success: true, message: "Logged out successfully" }
     rescue => e
       Rails.logger.error "Logout error: #{e.message}"

@@ -61,7 +61,7 @@ group :development, :test do
 
   # RSpec for testing
   gem "rspec-rails"
-  
+
   # Property-based testing
   gem "rantly"
 end

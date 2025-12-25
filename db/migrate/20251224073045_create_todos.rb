@@ -8,7 +8,7 @@ class CreateTodos < ActiveRecord::Migration[8.1]
 
       t.timestamps
     end
-    
-    add_index :todos, [:user_id, :position], unique: true
+
+    add_index :todos, [ :user_id, :position ], unique: true
   end
 end

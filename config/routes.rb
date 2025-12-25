@@ -11,20 +11,20 @@ Rails.application.routes.draw do
 
   # Root route serves the React application
   root "home#index"
-  
+
   # API routes
   namespace :api do
     # WebAuthn routes
-    post 'webauthn/registration/options', to: 'webauthn#registration_options'
-    post 'webauthn/registration/verify', to: 'webauthn#registration_verify'
-    post 'webauthn/authentication/options', to: 'webauthn#authentication_options'
-    post 'webauthn/authentication/verify', to: 'webauthn#authentication_verify'
-    
+    post "webauthn/registration/options", to: "webauthn#registration_options"
+    post "webauthn/registration/verify", to: "webauthn#registration_verify"
+    post "webauthn/authentication/options", to: "webauthn#authentication_options"
+    post "webauthn/authentication/verify", to: "webauthn#authentication_verify"
+
     # Session management
-    post :logout, to: 'sessions#destroy'
-    
+    post :logout, to: "sessions#destroy"
+
     # Todo routes
-    resources :todos, except: [:new, :edit] do
+    resources :todos, except: [ :new, :edit ] do
       collection do
         patch :reorder
       end
