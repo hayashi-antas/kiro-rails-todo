@@ -1,7 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Todo, TodoListResponse } from '../types/todo';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { Todo, TodoListResponse, TodoReorderUpdate, TodoReorderResponse } from '../types/todo';
 import { TodoForm } from './TodoForm';
 import { TodoItem } from './TodoItem';
+import { SortableTodoItem } from './SortableTodoItem';
 
 interface TodoListProps {
   className?: string;
@@ -12,6 +30,16 @@ export function TodoList({ className = '' }: TodoListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'open' | 'done'>('all');
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const [reorderError, setReorderError] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Load todos from API
   const loadTodos = useCallback(async () => {
@@ -67,6 +95,73 @@ export function TodoList({ className = '' }: TodoListProps) {
     setTodos(prevTodos => prevTodos.filter(todo => todo.id !== todoId));
   }, []);
 
+  // Handle drag start
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as number);
+    setReorderError(null);
+  }, []);
+
+  // Handle drag end
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeIndex = todos.findIndex(todo => todo.id === active.id);
+    const overIndex = todos.findIndex(todo => todo.id === over.id);
+
+    if (activeIndex === -1 || overIndex === -1) {
+      return;
+    }
+
+    // Optimistically update the UI
+    const reorderedTodos = arrayMove(todos, activeIndex, overIndex);
+    setTodos(reorderedTodos);
+
+    // Calculate new positions
+    const updates: TodoReorderUpdate[] = reorderedTodos.map((todo, index) => ({
+      id: todo.id,
+      position: index + 1,
+    }));
+
+    // Send reorder request to API
+    setIsReordering(true);
+    try {
+      const response = await fetch('/api/todos/reorder', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ updates }),
+      });
+
+      const data: TodoReorderResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Revert the optimistic update on failure
+        setTodos(todos);
+        setReorderError(data.error || 'Failed to reorder todos');
+      }
+    } catch (err) {
+      console.error('Reorder error:', err);
+      // Revert the optimistic update on network error
+      setTodos(todos);
+      setReorderError('Network error. Please try again.');
+    } finally {
+      setIsReordering(false);
+    }
+  }, [todos]);
+
+  // Handle drag cancel
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+  }, []);
+
   // Filter todos based on current filter
   const filteredTodos = todos.filter(todo => {
     switch (filter) {
@@ -90,9 +185,16 @@ export function TodoList({ className = '' }: TodoListProps) {
     setError(null);
   };
 
+  const clearReorderError = () => {
+    setReorderError(null);
+  };
+
   const handleRetry = () => {
     loadTodos();
   };
+
+  // Get the active todo for drag overlay
+  const activeTodo = activeId ? todos.find(todo => todo.id === activeId) : null;
 
   if (isLoading && todos.length === 0) {
     return (
@@ -177,6 +279,22 @@ export function TodoList({ className = '' }: TodoListProps) {
         </div>
       )}
 
+      {reorderError && (
+        <div className="error-message reorder-error" role="alert">
+          <div className="error-content">
+            <span className="error-text">{reorderError}</span>
+            <button 
+              type="button" 
+              className="error-dismiss"
+              onClick={clearReorderError}
+              aria-label="Dismiss reorder error"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {todos.length > 0 && (
         <div className="todo-filters">
           <button
@@ -226,22 +344,48 @@ export function TodoList({ className = '' }: TodoListProps) {
             )}
           </div>
         ) : (
-          filteredTodos.map(todo => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onTodoUpdated={handleTodoUpdated}
-              onTodoDeleted={handleTodoDeleted}
-            />
-          ))
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext 
+              items={filteredTodos.map(todo => todo.id)} 
+              strategy={verticalListSortingStrategy}
+            >
+              {filteredTodos.map(todo => (
+                <SortableTodoItem
+                  key={todo.id}
+                  todo={todo}
+                  onTodoUpdated={handleTodoUpdated}
+                  onTodoDeleted={handleTodoDeleted}
+                  isDragging={activeId === todo.id}
+                />
+              ))}
+            </SortableContext>
+            
+            <DragOverlay>
+              {activeTodo ? (
+                <div className="drag-overlay">
+                  <TodoItem
+                    todo={activeTodo}
+                    className="dragging-overlay"
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </div>
 
-      {isLoading && todos.length > 0 && (
+      {(isLoading && todos.length > 0) || isReordering ? (
         <div className="loading-overlay">
           <div className="loading-spinner" aria-hidden="true"></div>
+          {isReordering && <span className="loading-text">Reordering...</span>}
         </div>
-      )}
+      ) : null}
 
       <style jsx>{`
         .todo-list {
@@ -275,6 +419,12 @@ export function TodoList({ className = '' }: TodoListProps) {
           padding: 1rem;
           margin-bottom: 1rem;
           color: #c53030;
+        }
+
+        .error-message.reorder-error {
+          background: #fffbeb;
+          border-color: #fed7aa;
+          color: #92400e;
         }
 
         .error-content {
@@ -392,9 +542,16 @@ export function TodoList({ className = '' }: TodoListProps) {
           bottom: 0;
           background: rgba(255, 255, 255, 0.8);
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
           border-radius: 8px;
+          gap: 0.5rem;
+        }
+
+        .loading-text {
+          font-size: 0.875rem;
+          color: #656d76;
         }
 
         .loading-spinner {
@@ -410,6 +567,16 @@ export function TodoList({ className = '' }: TodoListProps) {
           to {
             transform: rotate(360deg);
           }
+        }
+
+        .drag-overlay {
+          transform: rotate(5deg);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .drag-overlay :global(.todo-item) {
+          border-color: #0969da;
+          background: #f6f8fa;
         }
       `}</style>
     </div>

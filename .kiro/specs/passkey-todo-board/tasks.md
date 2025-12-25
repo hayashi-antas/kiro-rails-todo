@@ -148,9 +148,7 @@
   - Test error handling and display
   - _Requirements: 1.1, 1.4, 2.1, 2.4_
 
-- [x] 8. Build Todo management React components
-  - Create TodoForm component for new todo creation
-  - Build TodoItem component with edit and delete functionality
+- [x] 8. Build Todo management React components - Create TodoForm component for new todo creation - Build TodoItem component with edit and delete functionality
   - Implement TodoList component with proper state management
   - Add loading states and error handling
   - _Requirements: 3.1, 4.1, 4.2, 5.1, 8.1, 8.3_
@@ -161,7 +159,7 @@
   - Test TodoList display and state management
   - _Requirements: 3.1, 4.1, 4.2, 5.1_
 
-- [ ] 9. Implement drag-and-drop functionality in React
+- [x] 9. Implement drag-and-drop functionality in React
   - Integrate dnd-kit library for sortable todo list
   - Create SortableTodoItem component with drag handles
   - Implement drag end handler with API integration
@@ -169,7 +167,7 @@
   - Handle reorder failures with state rollback
   - _Requirements: 6.1, 6.2, 6.4_
 
-- [ ] 9.1 Write unit tests for drag-and-drop components
+- [x] 9.1 Write unit tests for drag-and-drop components
   - Test drag operation handling
   - Test reorder API integration
   - Test error recovery and state rollback
