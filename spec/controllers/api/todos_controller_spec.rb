@@ -359,52 +359,182 @@ RSpec.describe Api::TodosController, type: :request do
       allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
     end
     
-    it 'currently fails to reorder due to position conflicts (needs improvement)' do
-      todo1 = user.todos.create!(title: 'Todo 1', status: 'open', position: 1)
-      todo2 = user.todos.create!(title: 'Todo 2', status: 'open', position: 2)
-      
-      # Current implementation fails when trying to swap positions due to uniqueness constraint
-      patch '/api/todos/reorder', 
-        params: { 
-          updates: [
-            { id: todo1.id, position: 2 },
-            { id: todo2.id, position: 1 }
-          ]
-        }.to_json,
-        headers: { 'Content-Type' => 'application/json' }
+    describe 'bulk position updates' do
+      it 'successfully updates multiple todo positions without conflicts' do
+        todo1 = user.todos.create!(title: 'Todo 1', status: 'open', position: 1)
+        todo2 = user.todos.create!(title: 'Todo 2', status: 'open', position: 2)
+        todo3 = user.todos.create!(title: 'Todo 3', status: 'open', position: 3)
         
-      # Documents current behavior - this should be fixed in the controller
-      expect(response).to have_http_status(:unprocessable_entity)
+        # Move todo1 to position 3, todo3 to position 1 (non-conflicting)
+        patch '/api/todos/reorder', 
+          params: { 
+            updates: [
+              { id: todo1.id, position: 4 },  # Move to safe position first
+              { id: todo3.id, position: 1 }   # Then move to desired position
+            ]
+          }.to_json,
+          headers: { 'Content-Type' => 'application/json' }
+          
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+        expect(result['message']).to include('Todos reordered successfully')
+        
+        # Verify positions are sequential and unique after normalization
+        user.todos.reload
+        all_positions = user.todos.pluck(:position).sort
+        expect(all_positions).to eq([1, 2, 3])
+        
+        # Verify the order has changed
+        ordered_todos = user.todos.ordered.to_a
+        expect(ordered_todos.map(&:id)).not_to eq([todo1.id, todo2.id, todo3.id])
+      end
       
-      result = JSON.parse(response.body)
-      expect(result['error']).to include('Reorder failed')
-      expect(result['errors']).to include('Position has already been taken')
+      it 'handles single todo position update' do
+        todo1 = user.todos.create!(title: 'Todo 1', status: 'open', position: 1)
+        todo2 = user.todos.create!(title: 'Todo 2', status: 'open', position: 2)
+        todo3 = user.todos.create!(title: 'Todo 3', status: 'open', position: 3)
+        
+        original_order = [todo1.id, todo2.id, todo3.id]
+        
+        # Move todo1 to position 3 (end of list)
+        patch '/api/todos/reorder', 
+          params: { 
+            updates: [
+              { id: todo1.id, position: 3 }
+            ]
+          }.to_json,
+          headers: { 'Content-Type' => 'application/json' }
+          
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+        expect(result['message']).to include('Todos reordered successfully')
+        
+        # Verify positions are sequential and unique
+        user.todos.reload
+        all_positions = user.todos.pluck(:position).sort
+        expect(all_positions).to eq([1, 2, 3])
+        
+        # Verify the order has changed - todo1 should now be at the end
+        new_order = user.todos.ordered.pluck(:id)
+        expect(new_order).not_to eq(original_order)
+        expect(new_order.last).to eq(todo1.id)  # todo1 should be at the end
+      end
     end
     
-    it 'successfully updates single todo position when no conflicts' do
-      todo1 = user.todos.create!(title: 'Todo 1', status: 'open', position: 1)
-      todo2 = user.todos.create!(title: 'Todo 2', status: 'open', position: 2)
-      todo3 = user.todos.create!(title: 'Todo 3', status: 'open', position: 3)
-      
-      # Move todo1 to position 4 (no conflict)
-      patch '/api/todos/reorder', 
-        params: { 
-          updates: [
-            { id: todo1.id, position: 4 }
-          ]
-        }.to_json,
-        headers: { 'Content-Type' => 'application/json' }
+    describe 'position conflict handling' do
+      it 'resolves conflicts when multiple todos claim the same position' do
+        todo1 = user.todos.create!(title: 'Todo 1', status: 'open', position: 1)
+        todo2 = user.todos.create!(title: 'Todo 2', status: 'open', position: 2)
+        todo3 = user.todos.create!(title: 'Todo 3', status: 'open', position: 3)
         
-      expect(response).to have_http_status(:success)
-      expect(response.content_type).to include('application/json')
+        # Try to move both todo1 and todo2 to position 2 (conflict)
+        patch '/api/todos/reorder', 
+          params: { 
+            updates: [
+              { id: todo1.id, position: 2 },
+              { id: todo2.id, position: 2 }
+            ]
+          }.to_json,
+          headers: { 'Content-Type' => 'application/json' }
+          
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+        expect(result['message']).to include('Todos reordered successfully')
+        
+        # Verify all todos have unique positions
+        all_positions = user.todos.pluck(:position)
+        expect(all_positions.uniq.length).to eq(all_positions.length)
+        expect(all_positions.sort).to eq([1, 2, 3])
+      end
       
-      result = JSON.parse(response.body)
-      expect(result['success']).to be true
-      expect(result['message']).to include('Todos reordered successfully')
+      it 'handles position swapping conflicts' do
+        todo1 = user.todos.create!(title: 'Todo 1', status: 'open', position: 1)
+        todo2 = user.todos.create!(title: 'Todo 2', status: 'open', position: 2)
+        
+        # Try to swap positions (would cause temporary conflict)
+        patch '/api/todos/reorder', 
+          params: { 
+            updates: [
+              { id: todo1.id, position: 2 },
+              { id: todo2.id, position: 1 }
+            ]
+          }.to_json,
+          headers: { 'Content-Type' => 'application/json' }
+          
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+        expect(result['message']).to include('Todos reordered successfully')
+        
+        # Verify positions are unique and sequential
+        all_positions = user.todos.pluck(:position).sort
+        expect(all_positions).to eq([1, 2])
+        
+        # Verify todos have been assigned valid positions
+        todo1.reload
+        todo2.reload
+        expect([todo1.position, todo2.position].sort).to eq([1, 2])
+      end
+    end
+    
+    describe 'authorization for reorder operations' do
+      let(:other_user) { User.create! }
+      let(:other_todo) { other_user.todos.create!(title: 'Other Todo', status: 'open', position: 1) }
       
-      # Verify position was updated
-      todo1.reload
-      expect(todo1.position).to eq(4)
+      it 'prevents reordering other users todos' do
+        patch '/api/todos/reorder', params: { updates: [{ id: other_todo.id, position: 2 }] }
+        
+        expect(response).to have_http_status(:forbidden)
+        expect(JSON.parse(response.body)['error']).to include('Unauthorized access to todos')
+        
+        # Verify other user's todo was not modified
+        other_todo.reload
+        expect(other_todo.position).to eq(1)
+      end
+      
+      it 'prevents mixed user todo reordering' do
+        user_todo = user.todos.create!(title: 'User Todo', status: 'open', position: 1)
+        
+        patch '/api/todos/reorder', params: { 
+          updates: [
+            { id: user_todo.id, position: 2 },
+            { id: other_todo.id, position: 1 }
+          ]
+        }
+        
+        expect(response).to have_http_status(:forbidden)
+        expect(JSON.parse(response.body)['error']).to include('Unauthorized access to todos')
+        
+        # Verify no todos were modified
+        user_todo.reload
+        other_todo.reload
+        expect(user_todo.position).to eq(1)
+        expect(other_todo.position).to eq(1)
+      end
+      
+      it 'allows reordering only owned todos' do
+        todo1 = user.todos.create!(title: 'Todo 1', status: 'open', position: 1)
+        todo2 = user.todos.create!(title: 'Todo 2', status: 'open', position: 2)
+        
+        patch '/api/todos/reorder', params: { 
+          updates: [
+            { id: todo1.id, position: 3 },
+            { id: todo2.id, position: 1 }
+          ]
+        }
+        
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+      end
     end
     
     it 'returns error for empty updates' do
@@ -425,6 +555,17 @@ RSpec.describe Api::TodosController, type: :request do
       
       result = JSON.parse(response.body)
       expect(result['error']).to include('No updates provided')
+    end
+    
+    it 'returns error for non-existent todo IDs' do
+      patch '/api/todos/reorder', 
+        params: { 
+          updates: [{ id: 99999, position: 1 }]
+        }.to_json,
+        headers: { 'Content-Type' => 'application/json' }
+        
+      expect(response).to have_http_status(:forbidden)
+      expect(JSON.parse(response.body)['error']).to include('Unauthorized access to todos')
     end
   end
 end

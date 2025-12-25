@@ -291,6 +291,332 @@ RSpec.describe "Todo Management Properties", type: :request do
     end
   end
   
+  describe "Property 9: Drag-and-Drop Reordering" do
+    # **Feature: passkey-todo-board, Property 9: Drag-and-Drop Reordering**
+    # **Validates: Requirements 6.1, 6.2**
+    
+    it "should update position values for affected todos and persist the new order when dragging a todo to a new position" do
+      100.times do
+        # Create user and establish authenticated session
+        user = User.create!
+        
+        # Mock authentication
+        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+        allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
+        
+        # Create multiple todos with sequential positions
+        todo_count = Rantly { range(3, 8) }
+        todos = []
+        todo_count.times do |i|
+          todos << user.todos.create!(
+            title: "Todo #{i + 1}",
+            status: Rantly { choose(:open, :done) },
+            position: i + 1
+          )
+        end
+        
+        # Generate a valid reordering scenario
+        # Pick a random todo and move it to a different position
+        source_index = Rantly { range(0, todo_count - 1) }
+        target_position = Rantly { range(1, todo_count) }
+        
+        # Skip if no actual movement
+        next if todos[source_index].position == target_position
+        
+        todo_to_move = todos[source_index]
+        original_position = todo_to_move.position
+        
+        # Record the original order of todos
+        original_order = user.todos.ordered.pluck(:id)
+        
+        # Perform the reorder via API
+        patch '/api/todos/reorder', params: {
+          updates: [{ id: todo_to_move.id, position: target_position }]
+        }
+        
+        # Should return success
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+        expect(result['message']).to include('reordered successfully')
+        
+        # Verify positions are still unique and sequential after reorder
+        user.todos.reload
+        all_positions = user.todos.pluck(:position).sort
+        expected_sequence = (1..todo_count).to_a
+        expect(all_positions).to eq(expected_sequence)
+        
+        # Verify all todos still exist (no data loss)
+        expect(user.todos.count).to eq(todo_count)
+        
+        # Verify the order has actually changed (unless it was a no-op)
+        new_order = user.todos.ordered.pluck(:id)
+        if original_position != target_position
+          expect(new_order).not_to eq(original_order)
+        end
+        
+        # Verify the moved todo is in a different position than before
+        todo_to_move.reload
+        if original_position != target_position
+          expect(todo_to_move.position).not_to eq(original_position)
+        end
+        
+        # Verify the new order is immediately retrievable via API
+        get '/api/todos'
+        expect(response).to have_http_status(:success)
+        
+        api_result = JSON.parse(response.body)
+        api_todos = api_result['todos']
+        
+        # Verify API returns todos in position order (1, 2, 3, ...)
+        api_positions = api_todos.map { |t| t['position'] }
+        expect(api_positions).to eq(api_positions.sort)
+        expect(api_positions).to eq((1..todo_count).to_a)
+        
+        # Verify API order matches database order
+        api_order = api_todos.map { |t| t['id'] }
+        expect(api_order).to eq(new_order)
+        
+        # Clean up for next iteration
+        User.destroy_all
+        Todo.destroy_all
+      end
+    end
+  end
+  
+  describe "Property 10: Reorder Persistence Round-Trip" do
+    # **Feature: passkey-todo-board, Property 10: Reorder Persistence Round-Trip**
+    # **Validates: Requirements 6.3**
+    
+    it "should display todos in the same order after reloading the page as after the reorder operation" do
+      100.times do
+        # Create user and establish authenticated session
+        user = User.create!
+        
+        # Mock authentication
+        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+        allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
+        
+        # Create multiple todos with sequential positions
+        todo_count = Rantly { range(3, 8) }
+        todos = []
+        todo_count.times do |i|
+          todos << user.todos.create!(
+            title: "Todo #{i + 1}",
+            status: Rantly { choose(:open, :done) },
+            position: i + 1
+          )
+        end
+        
+        # Generate a complex reordering scenario (multiple moves)
+        updates = []
+        num_moves = Rantly { range(1, [todo_count, 3].min) }
+        
+        # Create non-conflicting position updates
+        available_positions = (1..todo_count).to_a
+        todos_to_move = todos.sample(num_moves)
+        
+        # Remove current positions of todos being moved from available positions
+        todos_to_move.each do |todo|
+          available_positions.delete(todo.position)
+        end
+        
+        # Add back the positions that will be freed up
+        original_positions = todos_to_move.map(&:position)
+        available_positions.concat(original_positions)
+        available_positions = available_positions.uniq.sort
+        
+        todos_to_move.each do |todo|
+          # Assign a new position from available positions, ensuring it's different from current
+          possible_positions = available_positions - [todo.position]
+          next if possible_positions.empty?
+          
+          new_position = possible_positions.sample
+          available_positions.delete(new_position)
+          
+          updates << { id: todo.id, position: new_position }
+        end
+        
+        # Skip if no actual changes
+        next if updates.empty?
+        
+        # Perform the reorder operation
+        patch '/api/todos/reorder', params: { updates: updates }
+        
+        # Should return success
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+        
+        # Get the order immediately after reordering
+        get '/api/todos'
+        expect(response).to have_http_status(:success)
+        
+        immediate_result = JSON.parse(response.body)
+        immediate_order = immediate_result['todos'].sort_by { |t| t['position'] }
+        
+        # Simulate page reload by clearing any potential caching and making a fresh request
+        # In a real application, this would be a browser refresh
+        get '/api/todos'
+        expect(response).to have_http_status(:success)
+        
+        reload_result = JSON.parse(response.body)
+        reload_order = reload_result['todos'].sort_by { |t| t['position'] }
+        
+        # Verify the order is identical after "reload"
+        expect(reload_order.length).to eq(immediate_order.length)
+        
+        reload_order.each_with_index do |reload_todo, index|
+          immediate_todo = immediate_order[index]
+          
+          expect(reload_todo['id']).to eq(immediate_todo['id'])
+          expect(reload_todo['position']).to eq(immediate_todo['position'])
+          expect(reload_todo['title']).to eq(immediate_todo['title'])
+          expect(reload_todo['status']).to eq(immediate_todo['status'])
+        end
+        
+        # Verify positions are still sequential and unique
+        positions = reload_order.map { |t| t['position'] }
+        expect(positions).to eq((1..todo_count).to_a)
+        
+        # Verify database consistency
+        db_todos = user.todos.ordered.to_a
+        expect(db_todos.length).to eq(todo_count)
+        
+        db_todos.each_with_index do |db_todo, index|
+          api_todo = reload_order[index]
+          expect(db_todo.id).to eq(api_todo['id'])
+          expect(db_todo.position).to eq(api_todo['position'])
+          expect(db_todo.position).to eq(index + 1)
+        end
+        
+        # Clean up for next iteration
+        User.destroy_all
+        Todo.destroy_all
+      end
+    end
+  end
+  
+  describe "Property 11: Position Conflict Resolution" do
+    # **Feature: passkey-todo-board, Property 11: Position Conflict Resolution**
+    # **Validates: Requirements 6.5**
+    
+    it "should resolve position conflicts by recalculating position values to maintain unique, sequential ordering" do
+      100.times do
+        # Create user and establish authenticated session
+        user = User.create!
+        
+        # Mock authentication
+        allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
+        allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
+        
+        # Create multiple todos with sequential positions
+        todo_count = Rantly { range(4, 8) }
+        todos = []
+        todo_count.times do |i|
+          todos << user.todos.create!(
+            title: "Todo #{i + 1}",
+            status: Rantly { choose(:open, :done) },
+            position: i + 1
+          )
+        end
+        
+        # Create a scenario that would cause position conflicts
+        # This simulates what happens when multiple todos are moved simultaneously
+        # or when the frontend sends conflicting position updates
+        
+        # Generate conflicting updates (multiple todos trying to claim same positions)
+        conflict_scenarios = [
+          # Scenario 1: Two todos trying to swap positions
+          -> {
+            todo1, todo2 = todos.sample(2)
+            [
+              { id: todo1.id, position: todo2.position },
+              { id: todo2.id, position: todo1.position }
+            ]
+          },
+          # Scenario 2: Multiple todos trying to claim the same position
+          -> {
+            target_position = Rantly { range(1, todo_count) }
+            selected_todos = todos.sample(Rantly { range(2, [todo_count, 3].min) })
+            selected_todos.map { |todo| { id: todo.id, position: target_position } }
+          },
+          # Scenario 3: Chain of position conflicts
+          -> {
+            selected_todos = todos.sample(3)
+            [
+              { id: selected_todos[0].id, position: selected_todos[1].position },
+              { id: selected_todos[1].id, position: selected_todos[2].position },
+              { id: selected_todos[2].id, position: selected_todos[0].position }
+            ]
+          }
+        ]
+        
+        scenario = Rantly { choose(*conflict_scenarios) }
+        conflicting_updates = scenario.call
+        
+        # Skip if no conflicts would actually occur
+        positions_requested = conflicting_updates.map { |u| u[:position] }
+        next if positions_requested.uniq.length == positions_requested.length
+        
+        # Perform the conflicting reorder operation
+        patch '/api/todos/reorder', params: { updates: conflicting_updates }
+        
+        # Should return success (conflicts should be resolved, not cause errors)
+        expect(response).to have_http_status(:success)
+        
+        result = JSON.parse(response.body)
+        expect(result['success']).to be true
+        expect(result['message']).to include('reordered successfully')
+        
+        # Verify conflict resolution: all todos should have unique positions
+        user.todos.reload
+        all_positions = user.todos.pluck(:position)
+        expect(all_positions.uniq.length).to eq(all_positions.length), 
+               "Positions should be unique after conflict resolution"
+        
+        # Verify positions are sequential starting from 1
+        expect(all_positions.sort).to eq((1..todo_count).to_a),
+               "Positions should be sequential from 1 to #{todo_count}"
+        
+        # Verify all todos still exist (no data loss during conflict resolution)
+        expect(user.todos.count).to eq(todo_count)
+        
+        # Verify the resolution is stable and retrievable via API
+        get '/api/todos'
+        expect(response).to have_http_status(:success)
+        
+        api_result = JSON.parse(response.body)
+        api_todos = api_result['todos']
+        
+        expect(api_todos.length).to eq(todo_count)
+        
+        # Verify API returns todos in proper position order
+        api_positions = api_todos.map { |t| t['position'] }
+        expect(api_positions).to eq(api_positions.sort)
+        expect(api_positions).to eq((1..todo_count).to_a)
+        
+        # Verify no duplicate positions in API response
+        expect(api_positions.uniq.length).to eq(api_positions.length)
+        
+        # Verify that todos involved in the conflict have been assigned valid positions
+        conflicting_todo_ids = conflicting_updates.map { |u| u[:id] }
+        conflicting_todos_in_response = api_todos.select { |t| conflicting_todo_ids.include?(t['id']) }
+        
+        expect(conflicting_todos_in_response.length).to eq(conflicting_todo_ids.length)
+        conflicting_todos_in_response.each do |todo|
+          expect(todo['position']).to be_between(1, todo_count)
+        end
+        
+        # Clean up for next iteration
+        User.destroy_all
+        Todo.destroy_all
+      end
+    end
+  end
+  
   describe "Property 8: Todo Deletion and Position Integrity" do
     # **Feature: passkey-todo-board, Property 8: Todo Deletion and Position Integrity**
     # **Validates: Requirements 5.1, 5.2**

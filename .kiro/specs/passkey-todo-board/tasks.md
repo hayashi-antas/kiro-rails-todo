@@ -108,34 +108,34 @@
   - Test CRUD operations with proper authorization
   - Test validation error handling
   - Test JSON response formats
-  - _Requirements: 3.1, 3.4, 4.1, 4.2, 5.1, 10.1, 10.2, 10.3_
+  - _Requiremegitnts: 3.1, 3.4, 4.1, 4.2, 5.1, 10.1, 10.2, 10.3_
 
-- [ ] 6. Implement drag-and-drop reordering system
+- [x] 6. Implement drag-and-drop reordering system
   - Create reorder API endpoint for bulk position updates
   - Implement position conflict resolution logic
   - Add validation for reorder requests
   - Ensure atomic updates for position changes
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ] 6.1 Write property test for drag-and-drop reordering
+- [x] 6.1 Write property test for drag-and-drop reordering
   - **Property 9: Drag-and-Drop Reordering**
   - **Validates: Requirements 6.1, 6.2**
 
-- [ ] 6.2 Write property test for reorder persistence round-trip
+- [x] 6.2 Write property test for reorder persistence round-trip
   - **Property 10: Reorder Persistence Round-Trip**
   - **Validates: Requirements 6.3**
 
-- [ ] 6.3 Write property test for position conflict resolution
+- [x] 6.3 Write property test for position conflict resolution
   - **Property 11: Position Conflict Resolution**
   - **Validates: Requirements 6.5**
 
-- [ ] 6.4 Write unit tests for reorder controller
+- [x] 6.4 Write unit tests for reorder controller
   - Test bulk position updates
   - Test position conflict handling
   - Test authorization for reorder operations
   - _Requirements: 6.1, 6.2, 6.5_
 
-- [ ] 7. Create React authentication components
+- [-] 7. Create React authentication components
   - Build PasskeyRegistration component with WebAuthn API integration
   - Build PasskeyAuthentication component for login flow
   - Implement error handling and user feedback
