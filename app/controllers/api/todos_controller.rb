@@ -1,5 +1,6 @@
 class Api::TodosController < ApplicationController
-  protect_from_forgery with: :null_session
+  skip_before_action :verify_authenticity_token,
+                      only: %i[index show create update destroy reorder]
   before_action :require_authentication
   before_action :set_todo, only: [:show, :update, :destroy]
   before_action :verify_todo_ownership, only: [:show, :update, :destroy]
@@ -103,8 +104,15 @@ class Api::TodosController < ApplicationController
   private
   
   def todo_params
-    params.permit(:title, :status)
+    if params[:todo].is_a?(ActionController::Parameters)
+      # フロントから { todo: { title: ... } } で来た場合
+      params.require(:todo).permit(:title, :status)
+    else
+      # フロントから { title: ... } で来た場合
+      params.permit(:title, :status)
+    end
   end
+
   
   def set_todo
     @todo = Todo.find_by(id: params[:id])
