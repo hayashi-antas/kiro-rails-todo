@@ -4,10 +4,10 @@ import { TodoList } from '../components/TodoList';
 export function TodoPage() {
   return (
     <div className="todo-page">
-      <div className="todo-header">
+      {/* <div className="todo-header">
         <h1>My Todos</h1>
         <p>Manage your tasks with drag-and-drop reordering</p>
-      </div>
+      </div> */}
       
       <TodoList />
 

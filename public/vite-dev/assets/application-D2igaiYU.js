@@ -1128,7 +1128,7 @@ Please change the parent <Route path="${y}"> to <Route path="${y==="/"?"*":`${y}
           border-color: #0969da;
           background: #f6f8fa;
         }
-      `})]})}function Gx(){return p.jsxs("div",{className:"todo-page",children:[p.jsxs("div",{className:"todo-header",children:[p.jsx("h1",{children:"My Todos"}),p.jsx("p",{children:"Manage your tasks with drag-and-drop reordering"})]}),p.jsx(Xx,{}),p.jsx("style",{jsx:!0,children:`
+      `})]})}function Gx(){return p.jsxs("div",{className:"todo-page",children:[p.jsx(Xx,{}),p.jsx("style",{jsx:!0,children:`
         .todo-page {
           max-width: 800px;
           margin: 0 auto;

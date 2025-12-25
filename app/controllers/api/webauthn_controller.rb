@@ -84,26 +84,24 @@ class Api::WebauthnController < ApplicationController
   
   # POST /api/webauthn/authentication/options
   def authentication_options
-    # Generate challenge for authentication
-    challenge = WebAuthn.generate_user_id
-    
-    # Store challenge in session
-    session[:webauthn_challenge] = challenge
-    session[:webauthn_challenge_expires_at] = 5.minutes.from_now
-    
-    # Get all credential IDs for allowCredentials
+    # 登録済みクレデンシャルの ID を取得
     credential_ids = Credential.pluck(:credential_id)
-    
+
+    # options_for_get にチャレンジ生成を任せる
     options = WebAuthn::Credential.options_for_get(
       allow: credential_ids
     )
-    
+
+    # options.challenge をセッションに保存（registration と同じパターン）
+    session[:webauthn_challenge] = options.challenge
+    session[:webauthn_challenge_expires_at] = 5.minutes.from_now
+
     render json: options
   rescue => e
     Rails.logger.error "WebAuthn authentication options error: #{e.message}"
     render json: { error: "Failed to generate authentication options" }, status: :internal_server_error
   end
-  
+
   # POST /api/webauthn/authentication/verify
   def authentication_verify
     challenge = session[:webauthn_challenge]
