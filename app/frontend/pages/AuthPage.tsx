@@ -1,22 +1,96 @@
 import React, { useState } from 'react';
 import { PasskeyRegistration } from '../components/PasskeyRegistration';
 import { PasskeyAuthentication } from '../components/PasskeyAuthentication';
+import { TodoList } from '../components/TodoList';
 import { useAuth } from '../hooks/useAuth';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
-  // If already authenticated, show a simple message
+  // If already authenticated, show the todo list
   if (isAuthenticated) {
     return (
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="success-message">
-            <h2>✅ You're signed in!</h2>
-            <p>Welcome to your Passkey ToDo Board.</p>
+      <div className="app-page">
+        <header className="app-header">
+          <div className="header-content">
+            <h1>Passkey ToDo Board</h1>
+            <div className="header-actions">
+              <span className="user-info">User #{user?.id}</span>
+              <button
+                type="button"
+                onClick={logout}
+                className="logout-button"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
-        </div>
+        </header>
+        
+        <main className="app-main">
+          <TodoList />
+        </main>
+
+        <style jsx>{`
+          .app-page {
+            min-height: 100vh;
+            background: #f6f8fa;
+          }
+
+          .app-header {
+            background: white;
+            border-bottom: 1px solid #e1e5e9;
+            padding: 1rem 0;
+          }
+
+          .header-content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+
+          .header-content h1 {
+            margin: 0;
+            color: #24292f;
+            font-size: 1.5rem;
+            font-weight: 600;
+          }
+
+          .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+          }
+
+          .user-info {
+            color: #656d76;
+            font-size: 0.875rem;
+          }
+
+          .logout-button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d9e0;
+            border-radius: 6px;
+            background: white;
+            color: #24292f;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .logout-button:hover {
+            background: #f6f8fa;
+            border-color: #bbb;
+          }
+
+          .app-main {
+            padding: 2rem 0;
+          }
+        `}</style>
       </div>
     );
   }
