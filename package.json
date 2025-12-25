@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:production": "vite build",
     "test": "vitest --run",
     "test:watch": "vitest"
   },
