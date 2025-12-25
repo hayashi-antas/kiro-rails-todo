@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { TodoFormData, TodoApiResponse } from '../types/todo';
+import { ErrorMessage } from './ErrorMessage';
+import { api } from '../utils/api';
+import { NetworkError, isNetworkError } from '../utils/networkError';
 
 interface TodoFormProps {
   onTodoCreated?: (todo: any) => void;
@@ -9,7 +12,7 @@ interface TodoFormProps {
 export function TodoForm({ onTodoCreated, className = '' }: TodoFormProps) {
   const [title, setTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | Error | NetworkError | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,19 +30,9 @@ export function TodoForm({ onTodoCreated, className = '' }: TodoFormProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/todos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({ title: trimmedTitle }),
-      });
+      const data = await api.post('/todos', { title: trimmedTitle });
 
-      const data: TodoApiResponse = await response.json();
-
-      if (response.ok && data.success && data.todo) {
+      if (data.success && data.todo) {
         // Clear form
         setTitle('');
         setError(null);
@@ -58,7 +51,7 @@ export function TodoForm({ onTodoCreated, className = '' }: TodoFormProps) {
       }
     } catch (err) {
       console.error('Todo creation error:', err);
-      setError('Network error. Please try again.');
+      setError(err as Error);
     } finally {
       setIsLoading(false);
     }
@@ -66,6 +59,12 @@ export function TodoForm({ onTodoCreated, className = '' }: TodoFormProps) {
 
   const clearError = () => {
     setError(null);
+  };
+
+  const retrySubmit = async () => {
+    if (title.trim()) {
+      await handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+    }
   };
 
   return (
@@ -104,17 +103,11 @@ export function TodoForm({ onTodoCreated, className = '' }: TodoFormProps) {
         </div>
 
         {error && (
-          <div className="error-message" role="alert">
-            <span className="error-text">{error}</span>
-            <button 
-              type="button" 
-              className="error-dismiss"
-              onClick={clearError}
-              aria-label="Dismiss error"
-            >
-              ×
-            </button>
-          </div>
+          <ErrorMessage 
+            error={error}
+            onDismiss={clearError}
+            onRetry={isNetworkError(error) ? retrySubmit : undefined}
+          />
         )}
       </form>
 
@@ -211,38 +204,6 @@ export function TodoForm({ onTodoCreated, className = '' }: TodoFormProps) {
           to {
             transform: rotate(360deg);
           }
-        }
-
-        .error-message {
-          background: #fff5f5;
-          border: 1px solid #fed7d7;
-          border-radius: 6px;
-          padding: 0.5rem 0.75rem;
-          margin-top: 0.5rem;
-          color: #c53030;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 0.875rem;
-        }
-
-        .error-text {
-          flex: 1;
-        }
-
-        .error-dismiss {
-          background: none;
-          border: none;
-          font-size: 1.125rem;
-          color: #c53030;
-          cursor: pointer;
-          padding: 0;
-          line-height: 1;
-          margin-left: 0.5rem;
-        }
-
-        .error-dismiss:hover {
-          color: #9b2c2c;
         }
       `}</style>
     </div>

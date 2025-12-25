@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
 import { AuthState, User, AuthError } from '../types/auth';
+import { api } from '../utils/api';
+import { NetworkError } from '../utils/networkError';
 
 // Action types
 type AuthAction =
@@ -109,21 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     try {
       // Get registration options from server
-      const optionsResponse = await fetch('/api/webauthn/registration/options', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-      });
-
-      if (!optionsResponse.ok) {
-        const errorData = await optionsResponse.json();
-        throw new Error(errorData.error || 'Failed to get registration options');
-      }
-
-      const options = await optionsResponse.json();
+      const options = await api.post('/webauthn/registration/options');
 
       // Convert challenge and user ID from base64url to ArrayBuffer
       const publicKeyCredentialCreationOptions = {
@@ -160,22 +148,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       };
 
       // Verify registration with server
-      const verifyResponse = await fetch('/api/webauthn/registration/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({ credential: credentialJson }),
-      });
-
-      if (!verifyResponse.ok) {
-        const errorData = await verifyResponse.json();
-        throw new Error(errorData.error || 'Registration verification failed');
-      }
-
-      const result = await verifyResponse.json();
+      const result = await api.post('/webauthn/registration/verify', { credential: credentialJson });
       
       if (result.success) {
         dispatch({ 
@@ -208,21 +181,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     try {
       // Get authentication options from server
-      const optionsResponse = await fetch('/api/webauthn/authentication/options', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-      });
-
-      if (!optionsResponse.ok) {
-        const errorData = await optionsResponse.json();
-        throw new Error(errorData.error || 'Failed to get authentication options');
-      }
-
-      const options = await optionsResponse.json();
+      const options = await api.post('/webauthn/authentication/options');
 
       // Convert challenge and credential IDs from base64url to ArrayBuffer
       const publicKeyCredentialRequestOptions = {
@@ -258,22 +217,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       };
 
       // Verify authentication with server
-      const verifyResponse = await fetch('/api/webauthn/authentication/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({ credential: credentialJson }),
-      });
-
-      if (!verifyResponse.ok) {
-        const errorData = await verifyResponse.json();
-        throw new Error(errorData.error || 'Authentication verification failed');
-      }
-
-      const result = await verifyResponse.json();
+      const result = await api.post('/webauthn/authentication/verify', { credential: credentialJson });
       
       if (result.success) {
         dispatch({ 
@@ -295,14 +239,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Logout function
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'same-origin',
-      });
+      await api.post('/logout');
     } catch (error) {
       console.error('Logout error:', error);
       // Continue with logout even if server request fails
