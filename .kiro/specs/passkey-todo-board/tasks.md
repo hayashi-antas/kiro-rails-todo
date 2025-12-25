@@ -135,14 +135,14 @@
   - Test authorization for reorder operations
   - _Requirements: 6.1, 6.2, 6.5_
 
-- [-] 7. Create React authentication components
+- [x] 7. Create React authentication components
   - Build PasskeyRegistration component with WebAuthn API integration
   - Build PasskeyAuthentication component for login flow
   - Implement error handling and user feedback
   - Create authentication context provider
   - _Requirements: 1.1, 1.4, 2.1, 2.4, 8.1, 8.2_
 
-- [ ] 7.1 Write unit tests for authentication components
+- [x] 7.1 Write unit tests for authentication components
   - Test Passkey registration UI flow
   - Test Passkey authentication UI flow
   - Test error handling and display
