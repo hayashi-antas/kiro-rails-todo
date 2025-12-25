@@ -83,6 +83,24 @@ test:
 #
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
+# すでにある default / development / test はそのままでOK として…
+
 production:
-  <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
+  primary: &primary_production
+    <<: *default
+    # Render の PostgreSQL の接続文字列を使う
+    # Render の Dashboard → Database の "Internal Database URL" or "External URL"
+    # を DATABASE_URL として環境変数に入れておく前提
+    url: <%= ENV["DATABASE_URL"] %>
+
+  cache:
+    <<: *primary_production
+    migrations_paths: db/cache_migrate
+
+  queue:
+    <<: *primary_production
+    migrations_paths: db/queue_migrate
+
+  cable:
+    <<: *primary_production
+    migrations_paths: db/cable_migrate
