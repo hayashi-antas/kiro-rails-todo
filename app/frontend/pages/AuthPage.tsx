@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { PasskeyRegistration } from '../components/PasskeyRegistration';
 import { PasskeyAuthentication } from '../components/PasskeyAuthentication';
 import { useAuth } from '../hooks/useAuth';
+import { SnowEffect } from '../components/SnowEffect';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -22,8 +23,9 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4 relative overflow-hidden">
+      <SnowEffect particleCount={180} />
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8 text-white">
           <h1 className="m-0 mb-2 text-3xl font-bold  text-white!">Passkey ToDo Board</h1>
           <p className="m-0 text-lg text-white!">Secure, passwordless task management</p>
