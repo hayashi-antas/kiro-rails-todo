@@ -62,6 +62,29 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
   }
 }
 
+const base64UrlToUint8Array = (base64url: string): Uint8Array => {
+  const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i += 1) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
+
+const bufferToBase64Url = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+};
+
 // Context type
 interface AuthContextType extends AuthState {
   register: () => Promise<void>;
@@ -116,14 +139,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Convert challenge and user ID from base64url to ArrayBuffer
       const publicKeyCredentialCreationOptions = {
         ...options,
-        challenge: Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+        challenge: base64UrlToUint8Array(options.challenge),
         user: {
           ...options.user,
-          id: Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+          id: base64UrlToUint8Array(options.user.id),
         },
         excludeCredentials: options.excludeCredentials?.map((cred: any) => ({
           ...cred,
-          id: Uint8Array.from(atob(cred.id.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+          id: base64UrlToUint8Array(cred.id),
         })) || [],
       };
 
@@ -136,13 +159,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Failed to create credential');
       }
 
+      const rawId = bufferToBase64Url(credential.rawId);
+      const response = credential.response as AuthenticatorAttestationResponse;
+
       // Prepare credential for server
       const credentialJson = {
-        id: credential.id,
-        rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
+        id: rawId,
+        rawId,
         response: {
-          attestationObject: btoa(String.fromCharCode(...new Uint8Array((credential.response as AuthenticatorAttestationResponse).attestationObject))),
-          clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential.response.clientDataJSON))),
+          attestationObject: bufferToBase64Url(response.attestationObject),
+          clientDataJSON: bufferToBase64Url(response.clientDataJSON),
         },
         type: credential.type,
       };
@@ -186,10 +212,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Convert challenge and credential IDs from base64url to ArrayBuffer
       const publicKeyCredentialRequestOptions = {
         ...options,
-        challenge: Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+        challenge: base64UrlToUint8Array(options.challenge),
         allowCredentials: options.allowCredentials?.map((cred: any) => ({
           ...cred,
-          id: Uint8Array.from(atob(cred.id.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
+          id: base64UrlToUint8Array(cred.id),
         })) || [],
       };
 
@@ -202,16 +228,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Authentication cancelled or failed');
       }
 
+      const rawId = bufferToBase64Url(credential.rawId);
+      const response = credential.response as AuthenticatorAssertionResponse;
+
       // Prepare credential for server
       const credentialJson = {
-        id: credential.id,
-        rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
+        id: rawId,
+        rawId,
         response: {
-          authenticatorData: btoa(String.fromCharCode(...new Uint8Array((credential.response as AuthenticatorAssertionResponse).authenticatorData))),
-          clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential.response.clientDataJSON))),
-          signature: btoa(String.fromCharCode(...new Uint8Array((credential.response as AuthenticatorAssertionResponse).signature))),
-          userHandle: (credential.response as AuthenticatorAssertionResponse).userHandle ? 
-            btoa(String.fromCharCode(...new Uint8Array((credential.response as AuthenticatorAssertionResponse).userHandle!))) : null,
+          authenticatorData: bufferToBase64Url(response.authenticatorData),
+          clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+          signature: bufferToBase64Url(response.signature),
+          userHandle: response.userHandle ? bufferToBase64Url(response.userHandle) : null,
         },
         type: credential.type,
       };

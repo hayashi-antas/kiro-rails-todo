@@ -1,8 +1,16 @@
 {
-  "entrypoints/application.js": {
-    "file": "assets/application-DBfCPIOZ.js",
-    "name": "entrypoints/application.js",
-    "src": "entrypoints/application.js",
+  "entrypoints/application.css": {
+    "file": "assets/application-DvNBsu56.css",
+    "src": "entrypoints/application.css",
     "isEntry": true
+  },
+  "entrypoints/application.tsx": {
+    "file": "assets/application-BCNFhuwN.js",
+    "name": "entrypoints/application.tsx",
+    "src": "entrypoints/application.tsx",
+    "isEntry": true,
+    "css": [
+      "assets/application-DvNBsu56.css"
+    ]
   }
 }

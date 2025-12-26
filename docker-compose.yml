@@ -14,6 +14,9 @@ services:
       - WEBAUTHN_RP_ID=localhost
       - VITE_RUBY_HOST=0.0.0.0
       - VITE_RUBY_PORT=3036
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=200
+      - LISTEN_POLLING=1
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle
@@ -21,10 +24,16 @@ services:
       - rails_cache:/app/tmp/cache
     working_dir: /app
     command: >
-      bash -c "
-        bundle exec rails db:prepare &&
+      bash -c '
+        set -e
+        if [ ! -d node_modules ] || [ -z "$(ls -A node_modules 2>/dev/null)" ]; then
+          echo "Installing Node dependencies..."
+          npm install
+        fi
+        bundle exec rails db:prepare
+        bundle exec vite dev --host 0.0.0.0 --port 3036 &
         bundle exec rails server -b 0.0.0.0 -p 3000
-      "
+      '
     stdin_open: true
     tty: true
 

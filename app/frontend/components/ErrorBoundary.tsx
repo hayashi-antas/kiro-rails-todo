@@ -13,9 +13,6 @@ interface ErrorBoundaryProps {
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void
 }
 
-/**
- * Error boundary component that catches JavaScript errors anywhere in the child component tree
- */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props)
@@ -36,17 +33,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error)
     console.error('Error info:', errorInfo)
-    
+
     this.setState({
       errorInfo
     })
 
-    // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo)
     }
 
-    // In production, you might want to send this to an error reporting service
     if (process.env.NODE_ENV === 'production') {
       // Example: Send to error reporting service
       // errorReportingService.captureException(error, { extra: errorInfo })
@@ -63,90 +58,33 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render() {
     if (this.state.hasError && this.state.error) {
-      // Use custom fallback if provided
       if (this.props.fallback) {
         const FallbackComponent = this.props.fallback
         return <FallbackComponent error={this.state.error} retry={this.handleRetry} />
       }
 
-      // Default error UI
       return (
-        <div className="error-boundary">
-          <div className="error-boundary-content">
-            <h2 className="error-boundary-title">Something went wrong</h2>
-            <ErrorMessage 
+        <div className="min-h-[400px] flex items-center justify-center p-8 bg-gray-light">
+          <div className="max-w-xl w-full card p-8 text-center">
+            <h2 className="m-0 mb-4 text-gray-dark text-2xl font-semibold">Something went wrong</h2>
+            <ErrorMessage
               error={this.state.error}
               onRetry={this.handleRetry}
               title="Application Error"
             />
-            
+
             {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
-              <details className="error-boundary-details">
-                <summary>Error Details (Development Only)</summary>
-                <pre className="error-boundary-stack">
+              <details className="mt-6 text-left border border-gray-border-light rounded-md p-4 bg-gray-light">
+                <summary className="cursor-pointer font-medium mb-2">Error Details (Development Only)</summary>
+                <pre className="bg-gray-dark text-gray-100 p-4 rounded-md text-xs leading-relaxed overflow-x-auto my-2">
                   {this.state.error.stack}
                 </pre>
-                <pre className="error-boundary-info">
+                <pre className="bg-gray-dark text-gray-100 p-4 rounded-md text-xs leading-relaxed overflow-x-auto my-2">
                   {this.state.errorInfo.componentStack}
                 </pre>
               </details>
             )}
           </div>
-
-          <style jsx>{`
-            .error-boundary {
-              min-height: 400px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 2rem;
-              background: #f6f8fa;
-            }
-
-            .error-boundary-content {
-              max-width: 600px;
-              width: 100%;
-              background: white;
-              border: 1px solid #e1e5e9;
-              border-radius: 8px;
-              padding: 2rem;
-              text-align: center;
-            }
-
-            .error-boundary-title {
-              margin: 0 0 1rem 0;
-              color: #24292f;
-              font-size: 1.5rem;
-              font-weight: 600;
-            }
-
-            .error-boundary-details {
-              margin-top: 1.5rem;
-              text-align: left;
-              border: 1px solid #e1e5e9;
-              border-radius: 6px;
-              padding: 1rem;
-              background: #f6f8fa;
-            }
-
-            .error-boundary-details summary {
-              cursor: pointer;
-              font-weight: 500;
-              margin-bottom: 0.5rem;
-            }
-
-            .error-boundary-stack,
-            .error-boundary-info {
-              background: #24292f;
-              color: #f0f6fc;
-              padding: 1rem;
-              border-radius: 6px;
-              font-size: 0.75rem;
-              line-height: 1.4;
-              overflow-x: auto;
-              margin: 0.5rem 0;
-            }
-          `}</style>
         </div>
       )
     }

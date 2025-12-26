@@ -11,11 +11,11 @@ interface SortableTodoItemProps {
   isDragging?: boolean;
 }
 
-export function SortableTodoItem({ 
-  todo, 
-  onTodoUpdated, 
-  onTodoDeleted, 
-  isDragging = false 
+export function SortableTodoItem({
+  todo,
+  onTodoUpdated,
+  onTodoDeleted,
+  isDragging = false
 }: SortableTodoItemProps) {
   const {
     attributes,
@@ -33,66 +33,23 @@ export function SortableTodoItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="sortable-todo-item">
-      <div className="drag-handle" {...attributes} {...listeners}>
-        <span className="drag-icon" aria-hidden="true">⋮⋮</span>
+    <div ref={setNodeRef} style={style} className="flex items-start gap-2 mb-2">
+      <div
+        className="flex items-center justify-center w-6 h-10 cursor-grab text-gray-text rounded transition-all duration-200 mt-3 hover:bg-gray-light hover:text-gray-dark active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <span className="text-sm leading-none select-none" aria-hidden="true">⋮⋮</span>
       </div>
-      
-      <div className="todo-item-wrapper">
+
+      <div className="flex-1 min-w-0">
         <TodoItem
           todo={todo}
           onTodoUpdated={onTodoUpdated}
           onTodoDeleted={onTodoDeleted}
-          className={isDragging ? 'dragging' : ''}
+          className={isDragging ? 'shadow-lg rotate-2' : ''}
         />
       </div>
-
-      <style jsx>{`
-        .sortable-todo-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .drag-handle {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 1.5rem;
-          height: 2.5rem;
-          cursor: grab;
-          color: #656d76;
-          border-radius: 4px;
-          transition: all 0.2s;
-          margin-top: 0.75rem;
-        }
-
-        .drag-handle:hover {
-          background: #f6f8fa;
-          color: #24292f;
-        }
-
-        .drag-handle:active {
-          cursor: grabbing;
-        }
-
-        .drag-icon {
-          font-size: 0.875rem;
-          line-height: 1;
-          user-select: none;
-        }
-
-        .todo-item-wrapper {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .sortable-todo-item :global(.todo-item.dragging) {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          transform: rotate(2deg);
-        }
-      `}</style>
     </div>
   );
 }
