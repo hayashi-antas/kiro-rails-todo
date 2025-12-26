@@ -4,15 +4,9 @@ interface Snowflake {
   x: number;
   y: number;
   radius: number;
-  speed: number;
-  wind: number;
-  opacity: number;
-  swing: number;
-  swingSpeed: number;
-  swingOffset: number;
-  blur: number;
-  wobble: number;
-  wobbleSpeed: number;
+  speedY: number;
+  driftX: number;
+  swingPhase: number;
 }
 
 interface SnowEffectProps {
@@ -20,148 +14,88 @@ interface SnowEffectProps {
   className?: string;
 }
 
-export function SnowEffect({ particleCount = 150, className = '' }: SnowEffectProps) {
+export function SnowEffect({
+  particleCount = 60, // 思い切って減らす（必要なら増やす）
+  className = '',
+}: SnowEffectProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const snowflakesRef = useRef<Snowflake[]>([]);
   const animationRef = useRef<number>();
-  const mouseRef = useRef({ x: 0, y: 0, active: false });
+  const sizeRef = useRef({ width: 0, height: 0 });
   const timeRef = useRef(0);
-  const windRef = useRef({ current: 0, target: 0 });
+  const lastFrameRef = useRef<number | null>(null);
 
-  const createSnowflake = useCallback((canvas: HTMLCanvasElement, startAtTop = false): Snowflake => {
-    const isLarge = Math.random() > 0.85;
-    const isMedium = !isLarge && Math.random() > 0.6;
+  const createSnowflake = useCallback(
+    (width: number, height: number, startAtTop = false): Snowflake => {
+      const radius = 1 + Math.random() * 2; // 1〜3px
+      const speedY = 0.4 + Math.random() * 0.8; // 落ちる速度
+      const driftX = (Math.random() - 0.5) * 0.3; // 横方向のゆるい流れ
 
-    let radius: number;
-    let speed: number;
-    let blur: number;
-    let opacity: number;
+      return {
+        x: Math.random() * width,
+        y: startAtTop ? -radius * 2 : Math.random() * height,
+        radius,
+        speedY,
+        driftX,
+        swingPhase: Math.random() * Math.PI * 2,
+      };
+    },
+    []
+  );
 
-    if (isLarge) {
-      radius = 3 + Math.random() * 3;
-      speed = 0.8 + Math.random() * 0.6;
-      blur = 0;
-      opacity = 0.9 + Math.random() * 0.1;
-    } else if (isMedium) {
-      radius = 1.5 + Math.random() * 1.5;
-      speed = 0.5 + Math.random() * 0.5;
-      blur = 0.5;
-      opacity = 0.6 + Math.random() * 0.3;
-    } else {
-      radius = 0.5 + Math.random() * 1;
-      speed = 0.2 + Math.random() * 0.4;
-      blur = 1;
-      opacity = 0.3 + Math.random() * 0.3;
-    }
-
-    return {
-      x: Math.random() * canvas.width,
-      y: startAtTop ? -radius * 2 : Math.random() * canvas.height,
-      radius,
-      speed,
-      wind: (Math.random() - 0.5) * 0.3,
-      opacity,
-      swing: Math.random() * Math.PI * 2,
-      swingSpeed: 0.01 + Math.random() * 0.02,
-      swingOffset: 20 + Math.random() * 30,
-      blur,
-      wobble: Math.random() * Math.PI * 2,
-      wobbleSpeed: 0.02 + Math.random() * 0.03,
-    };
-  }, []);
-
-  const initSnowflakes = useCallback((canvas: HTMLCanvasElement) => {
-    snowflakesRef.current = [];
-    for (let i = 0; i < particleCount; i++) {
-      snowflakesRef.current.push(createSnowflake(canvas, false));
-    }
-  }, [particleCount, createSnowflake]);
-
-  const drawSnowflake = useCallback((
-    ctx: CanvasRenderingContext2D,
-    flake: Snowflake,
-    time: number
-  ) => {
-    const swingX = Math.sin(flake.swing + time * flake.swingSpeed) * flake.swingOffset * (flake.radius / 3);
-    const wobbleScale = 1 + Math.sin(flake.wobble + time * flake.wobbleSpeed) * 0.1;
-
-    ctx.save();
-
-    if (flake.blur > 0) {
-      ctx.filter = `blur(${flake.blur}px)`;
-    }
-
-    const gradient = ctx.createRadialGradient(
-      flake.x + swingX, flake.y,
-      0,
-      flake.x + swingX, flake.y,
-      flake.radius * wobbleScale
-    );
-
-    gradient.addColorStop(0, `rgba(255, 255, 255, ${flake.opacity})`);
-    gradient.addColorStop(0.4, `rgba(255, 255, 255, ${flake.opacity * 0.8})`);
-    gradient.addColorStop(0.7, `rgba(230, 240, 255, ${flake.opacity * 0.4})`);
-    gradient.addColorStop(1, `rgba(200, 220, 255, 0)`);
-
-    ctx.beginPath();
-    ctx.arc(
-      flake.x + swingX,
-      flake.y,
-      flake.radius * wobbleScale * 1.5,
-      0,
-      Math.PI * 2
-    );
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    if (flake.radius > 2) {
-      ctx.beginPath();
-      ctx.arc(
-        flake.x + swingX - flake.radius * 0.3,
-        flake.y - flake.radius * 0.3,
-        flake.radius * 0.2,
-        0,
-        Math.PI * 2
-      );
-      ctx.fillStyle = `rgba(255, 255, 255, ${flake.opacity * 0.5})`;
-      ctx.fill();
-    }
-
-    ctx.restore();
-  }, []);
-
-  const updateSnowflake = useCallback((
-    flake: Snowflake,
-    canvas: HTMLCanvasElement,
-    globalWind: number
-  ): boolean => {
-    flake.y += flake.speed;
-    flake.x += flake.wind + globalWind * (flake.radius / 3);
-
-    if (mouseRef.current.active) {
-      const dx = flake.x - mouseRef.current.x;
-      const dy = flake.y - mouseRef.current.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const maxDistance = 100;
-
-      if (distance < maxDistance) {
-        const force = (1 - distance / maxDistance) * 2;
-        flake.x += (dx / distance) * force;
-        flake.y += (dy / distance) * force * 0.5;
+  const initSnowflakes = useCallback(
+    (width: number, height: number) => {
+      snowflakesRef.current = [];
+      for (let i = 0; i < particleCount; i++) {
+        snowflakesRef.current.push(createSnowflake(width, height, false));
       }
-    }
+    },
+    [particleCount, createSnowflake]
+  );
 
-    if (flake.y > canvas.height + flake.radius * 2) {
-      return true;
-    }
-    if (flake.x < -50) {
-      flake.x = canvas.width + 50;
-    } else if (flake.x > canvas.width + 50) {
-      flake.x = -50;
-    }
+  const updateSnowflake = useCallback(
+    (flake: Snowflake, width: number, height: number, dt: number): boolean => {
+      // dt は秒数。小さいのでそのまま掛ける
+      flake.y += flake.speedY * (dt * 60); // おおよそ60fps基準
+      flake.x += flake.driftX * (dt * 60);
 
-    return false;
-  }, []);
+      // 画面外に落ちたらリセット
+      if (flake.y > height + flake.radius * 2) {
+        return true;
+      }
+
+      // 横にはみ出したらラップ
+      if (flake.x < -20) {
+        flake.x = width + 20;
+      } else if (flake.x > width + 20) {
+        flake.x = -20;
+      }
+
+      return false;
+    },
+    []
+  );
+
+  const drawSnowflake = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      flake: Snowflake,
+      time: number
+    ) => {
+      // ごく軽い揺れだけ追加（sin 1回）
+      const swingX =
+        Math.sin(flake.swingPhase + time * 0.5) * flake.radius * 1.5;
+
+      const drawX = flake.x + swingX;
+      const drawY = flake.y;
+
+      ctx.beginPath();
+      ctx.arc(drawX, drawY, flake.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fill();
+    },
+    []
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -171,76 +105,82 @@ export function SnowEffect({ particleCount = 150, className = '' }: SnowEffectPr
     if (!ctx) return;
 
     const resizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1;
+      // 🔴 超軽量のため DPR は 1 に固定（Retina捨てる）
+      const dpr = 1;
       const rect = canvas.getBoundingClientRect();
+
+      sizeRef.current.width = rect.width;
+      sizeRef.current.height = rect.height;
+
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // 念のためリセット
+      // dpr 1 なので scale も不要（書くなら ctx.scale(dpr, dpr)）
+
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
+
+      initSnowflakes(rect.width, rect.height);
     };
 
     resizeCanvas();
-    initSnowflakes(canvas);
 
     const handleResize = () => {
       resizeCanvas();
-      initSnowflakes(canvas);
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseRef.current.x = e.clientX - rect.left;
-      mouseRef.current.y = e.clientY - rect.top;
-      mouseRef.current.active = true;
-    };
-
-    const handleMouseLeave = () => {
-      mouseRef.current.active = false;
     };
 
     window.addEventListener('resize', handleResize);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseleave', handleMouseLeave);
 
     const animate = () => {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
-
-      timeRef.current += 1;
-
-      if (Math.random() < 0.005) {
-        windRef.current.target = (Math.random() - 0.5) * 2;
+      const { width, height } = sizeRef.current;
+      if (width === 0 || height === 0) {
+        animationRef.current = requestAnimationFrame(animate);
+        return;
       }
-      windRef.current.current += (windRef.current.target - windRef.current.current) * 0.01;
+
+      const now = performance.now();
+      if (lastFrameRef.current == null) {
+        lastFrameRef.current = now;
+      }
+      const deltaMs = now - lastFrameRef.current;
+
+      // 🔻 30fps 相当まで落とす（これだけでもかなり軽くなる）
+      const frameInterval = 1000 / 30;
+      if (deltaMs < frameInterval) {
+        animationRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      const dt = deltaMs / 1000; // 秒
+      lastFrameRef.current = now;
+      timeRef.current += dt;
+
+      ctx.clearRect(0, 0, width, height);
 
       const snowflakes = snowflakesRef.current;
 
       for (let i = snowflakes.length - 1; i >= 0; i--) {
         const flake = snowflakes[i];
-        const shouldReset = updateSnowflake(flake, canvas, windRef.current.current);
-
+        const shouldReset = updateSnowflake(flake, width, height, dt);
         if (shouldReset) {
-          snowflakes[i] = createSnowflake(canvas, true);
+          snowflakes[i] = createSnowflake(width, height, true);
         }
-
         drawSnowflake(ctx, flake, timeRef.current);
       }
 
-      const targetCount = particleCount;
-      if (snowflakes.length < targetCount && Math.random() < 0.1) {
-        snowflakes.push(createSnowflake(canvas, true));
+      // 粒子不足時だけ少しずつ補充
+      if (snowflakes.length < particleCount && Math.random() < 0.05) {
+        snowflakes.push(createSnowflake(width, height, true));
       }
 
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    animationRef.current = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseleave', handleMouseLeave);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
@@ -250,7 +190,7 @@ export function SnowEffect({ particleCount = 150, className = '' }: SnowEffectPr
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 pointer-events-auto ${className}`}
+      className={`absolute inset-0 pointer-events-none ${className}`}
       style={{
         width: '100%',
         height: '100%',
