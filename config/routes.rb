@@ -23,6 +23,11 @@ Rails.application.routes.draw do
     # Session management
     post :logout, to: "sessions#destroy"
 
+    # Test-only route for setting up authenticated sessions in tests
+    if Rails.env.test?
+      post "test/sign_in", to: "test#sign_in"
+    end
+
     # Todo routes
     resources :todos, except: [ :new, :edit ] do
       collection do
