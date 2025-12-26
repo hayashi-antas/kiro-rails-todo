@@ -35,7 +35,7 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
 
   const handleEditSave = async () => {
     const trimmedTitle = editTitle.trim();
-    
+
     if (!trimmedTitle) {
       setError('Todo title cannot be empty');
       return;
@@ -63,7 +63,7 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
 
   const handleDelete = async () => {
     if (isLoading) return;
-    
+
     if (!confirm('Are you sure you want to delete this todo?')) {
       return;
     }
@@ -151,40 +151,45 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
   };
 
   return (
-    <div className={`todo-item ${todo.status} ${className}`}>
-      <div className="todo-content">
-        <div className="todo-main">
+    <div className={`card mb-2 transition-shadow duration-200 hover:shadow-md ${todo.status === 'done' ? 'opacity-70' : ''} ${className}`}>
+      <div className="p-3">
+        <div className="flex items-start gap-3">
           <button
             type="button"
-            className={`status-toggle ${todo.status}`}
+            className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-all duration-200 flex-shrink-0 mt-0.5 cursor-pointer
+              ${todo.status === 'done'
+                ? 'bg-success border-success text-white'
+                : 'bg-white border-gray-border hover:border-primary'
+              }
+              ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
             onClick={handleStatusToggle}
             disabled={isLoading}
             aria-label={`Mark as ${todo.status === 'open' ? 'done' : 'open'}`}
           >
             {todo.status === 'done' && (
-              <span className="checkmark" aria-hidden="true">✓</span>
+              <span className="text-xs font-bold" aria-hidden="true">✓</span>
             )}
           </button>
 
-          <div className="todo-text">
+          <div className="flex-1 min-w-0">
             {isEditing ? (
-              <div className="edit-form">
+              <div className="flex flex-col gap-2">
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   onKeyDown={handleEditKeyDown}
-                  className={`edit-input ${error ? 'error' : ''}`}
+                  className={`input-field py-1.5 px-2 text-sm ${error ? 'error' : ''}`}
                   disabled={isLoading}
                   maxLength={255}
                   autoFocus
                 />
-                <div className="edit-actions">
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={handleEditSave}
                     disabled={isLoading || !editTitle.trim()}
-                    className="save-button"
+                    className="btn-primary py-1 px-2 text-xs"
                   >
                     Save
                   </button>
@@ -192,18 +197,18 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
                     type="button"
                     onClick={handleEditCancel}
                     disabled={isLoading}
-                    className="cancel-button"
+                    className="btn-outline py-1 px-2 text-xs"
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="todo-display">
-                <span className={`todo-title ${todo.status}`}>
+              <div className="flex flex-col gap-1">
+                <span className={`text-sm leading-relaxed text-gray-dark break-words ${todo.status === 'done' ? 'line-through text-gray-text' : ''}`}>
                   {todo.title}
                 </span>
-                <span className="todo-date">
+                <span className="text-xs text-gray-text">
                   {formatDate(todo.created_at)}
                 </span>
               </div>
@@ -212,12 +217,12 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
         </div>
 
         {!isEditing && (
-          <div className="todo-actions">
+          <div className="flex gap-1 ml-auto flex-shrink-0">
             <button
               type="button"
               onClick={handleEditStart}
               disabled={isLoading}
-              className="action-button edit-button"
+              className="w-8 h-8 border-none bg-transparent cursor-pointer rounded flex items-center justify-center text-sm transition-colors duration-200 hover:bg-gray-light disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Edit todo"
             >
               ✏️
@@ -226,7 +231,7 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
               type="button"
               onClick={handleDelete}
               disabled={isLoading}
-              className="action-button delete-button"
+              className="w-8 h-8 border-none bg-transparent cursor-pointer rounded flex items-center justify-center text-sm transition-colors duration-200 hover:bg-danger-bg disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Delete todo"
             >
               🗑️
@@ -236,11 +241,11 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
       </div>
 
       {error && (
-        <div className="error-message" role="alert">
-          <span className="error-text">{error}</span>
-          <button 
-            type="button" 
-            className="error-dismiss"
+        <div className="error-alert mx-3 mb-3 py-2 px-3 flex items-center justify-between text-sm" role="alert">
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            className="bg-transparent border-none text-lg text-danger cursor-pointer p-0 leading-none ml-2 hover:text-danger-hover"
             onClick={clearError}
             aria-label="Dismiss error"
           >
@@ -248,228 +253,6 @@ export function TodoItem({ todo, onTodoUpdated, onTodoDeleted, className = '' }:
           </button>
         </div>
       )}
-
-      <style jsx>{`
-        .todo-item {
-          background: white;
-          border: 1px solid #e1e5e9;
-          border-radius: 8px;
-          margin-bottom: 0.5rem;
-          transition: box-shadow 0.2s;
-        }
-
-        .todo-item:hover {
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .todo-item.done {
-          opacity: 0.7;
-        }
-
-        .todo-content {
-          padding: 0.75rem;
-        }
-
-        .todo-main {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-        }
-
-        .status-toggle {
-          width: 1.25rem;
-          height: 1.25rem;
-          border: 2px solid #d1d9e0;
-          border-radius: 4px;
-          background: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-          flex-shrink: 0;
-          margin-top: 0.125rem;
-        }
-
-        .status-toggle:hover {
-          border-color: #0969da;
-        }
-
-        .status-toggle.done {
-          background: #1f883d;
-          border-color: #1f883d;
-          color: white;
-        }
-
-        .status-toggle:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
-        }
-
-        .checkmark {
-          font-size: 0.75rem;
-          font-weight: bold;
-        }
-
-        .todo-text {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .todo-display {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .todo-title {
-          font-size: 0.875rem;
-          line-height: 1.4;
-          color: #24292f;
-          word-wrap: break-word;
-        }
-
-        .todo-title.done {
-          text-decoration: line-through;
-          color: #656d76;
-        }
-
-        .todo-date {
-          font-size: 0.75rem;
-          color: #656d76;
-        }
-
-        .edit-form {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .edit-input {
-          width: 100%;
-          padding: 0.375rem 0.5rem;
-          border: 1px solid #d1d9e0;
-          border-radius: 4px;
-          font-size: 0.875rem;
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .edit-input:focus {
-          outline: none;
-          border-color: #0969da;
-          box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
-        }
-
-        .edit-input.error {
-          border-color: #d1242f;
-        }
-
-        .edit-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .save-button, .cancel-button {
-          padding: 0.25rem 0.5rem;
-          border: 1px solid;
-          border-radius: 4px;
-          font-size: 0.75rem;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        }
-
-        .save-button {
-          background: #1f883d;
-          border-color: #1f883d;
-          color: white;
-        }
-
-        .save-button:hover:not(:disabled) {
-          background: #1a7f37;
-        }
-
-        .save-button:disabled {
-          background: #94a3b8;
-          border-color: #94a3b8;
-          cursor: not-allowed;
-        }
-
-        .cancel-button {
-          background: white;
-          border-color: #d1d9e0;
-          color: #24292f;
-        }
-
-        .cancel-button:hover:not(:disabled) {
-          background: #f6f8fa;
-        }
-
-        .todo-actions {
-          display: flex;
-          gap: 0.25rem;
-          margin-left: auto;
-          flex-shrink: 0;
-        }
-
-        .action-button {
-          width: 2rem;
-          height: 2rem;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.875rem;
-          transition: background-color 0.2s;
-        }
-
-        .action-button:hover:not(:disabled) {
-          background: #f6f8fa;
-        }
-
-        .action-button:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
-        }
-
-        .delete-button:hover:not(:disabled) {
-          background: #fff5f5;
-        }
-
-        .error-message {
-          background: #fff5f5;
-          border: 1px solid #fed7d7;
-          border-radius: 6px;
-          padding: 0.5rem 0.75rem;
-          margin-top: 0.5rem;
-          color: #c53030;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 0.875rem;
-        }
-
-        .error-text {
-          flex: 1;
-        }
-
-        .error-dismiss {
-          background: none;
-          border: none;
-          font-size: 1.125rem;
-          color: #c53030;
-          cursor: pointer;
-          padding: 0;
-          line-height: 1;
-          margin-left: 0.5rem;
-        }
-
-        .error-dismiss:hover {
-          color: #9b2c2c;
-        }
-      `}</style>
     </div>
   );
 }

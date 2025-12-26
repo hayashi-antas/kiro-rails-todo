@@ -1,16 +1,16 @@
 {
   "entrypoints/application.css": {
-    "file": "assets/application-i5QoS-ON.css",
+    "file": "assets/application-Ba1SOBvF.css",
     "src": "entrypoints/application.css",
     "isEntry": true
   },
   "entrypoints/application.tsx": {
-    "file": "assets/application-D2igaiYU.js",
+    "file": "assets/application-VbAf4_m1.js",
     "name": "entrypoints/application.tsx",
     "src": "entrypoints/application.tsx",
     "isEntry": true,
     "css": [
-      "assets/application-i5QoS-ON.css"
+      "assets/application-Ba1SOBvF.css"
     ]
   }
 }

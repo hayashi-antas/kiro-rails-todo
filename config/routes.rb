@@ -30,4 +30,8 @@ Rails.application.routes.draw do
       end
     end
   end
+
+    # /api 以外のすべてのパスを home#index に飛ばす（SPA用）
+    get "*path", to: "home#index",
+      constraints: ->(req) { !req.xhr? && req.format.html? }
 end

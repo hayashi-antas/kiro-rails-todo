@@ -5,47 +5,47 @@ export function AccountPage() {
   const { user } = useAuth();
 
   return (
-    <div className="account-page">
-      <div className="account-container">
-        <div className="account-header">
-          <h1>Account Information</h1>
-          <p>Manage your account settings and information</p>
+    <div className="max-w-3xl mx-auto">
+      <div className="card overflow-hidden">
+        <div className="p-8 border-b border-gray-border-light bg-gray-light">
+          <h1 className="m-0 mb-2 text-gray-dark text-2xl font-semibold">Account Information</h1>
+          <p className="m-0 text-gray-text text-base">Manage your account settings and information</p>
         </div>
 
-        <div className="account-content">
-          <div className="info-section">
-            <h2>User Details</h2>
-            <div className="info-grid">
-              <div className="info-item">
-                <label>User ID</label>
-                <span className="info-value">#{user?.id}</span>
+        <div className="p-8">
+          <div className="mb-8">
+            <h2 className="m-0 mb-4 text-gray-dark text-xl font-semibold">User Details</h2>
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-text">User ID</label>
+                <span className="text-base text-gray-dark font-medium">#{user?.id}</span>
               </div>
-              <div className="info-item">
-                <label>Authentication Method</label>
-                <span className="info-value">WebAuthn Passkey</span>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-text">Authentication Method</label>
+                <span className="text-base text-gray-dark font-medium">WebAuthn Passkey</span>
               </div>
             </div>
           </div>
 
-          <div className="info-section">
-            <h2>Security</h2>
-            <div className="security-info">
-              <div className="security-item">
-                <div className="security-icon">🔐</div>
-                <div className="security-content">
-                  <h3>Passkey Authentication</h3>
-                  <p>
-                    Your account is secured with WebAuthn Passkeys, providing 
+          <div>
+            <h2 className="m-0 mb-4 text-gray-dark text-xl font-semibold">Security</h2>
+            <div className="flex flex-col gap-6">
+              <div className="flex gap-4 p-6 bg-gray-light rounded-lg border border-gray-border-light sm:flex-row flex-col sm:text-left text-center">
+                <div className="text-4xl shrink-0 sm:self-start self-center">🔐</div>
+                <div>
+                  <h3 className="m-0 mb-2 text-gray-dark text-lg font-semibold">Passkey Authentication</h3>
+                  <p className="m-0 text-gray-text leading-relaxed">
+                    Your account is secured with WebAuthn Passkeys, providing
                     passwordless authentication that's both secure and convenient.
                   </p>
                 </div>
               </div>
-              <div className="security-item">
-                <div className="security-icon">🛡️</div>
-                <div className="security-content">
-                  <h3>Data Protection</h3>
-                  <p>
-                    Your todos are private and only accessible to you. 
+              <div className="flex gap-4 p-6 bg-gray-light rounded-lg border border-gray-border-light sm:flex-row flex-col sm:text-left text-center">
+                <div className="text-4xl shrink-0 sm:self-start self-center">🛡️</div>
+                <div>
+                  <h3 className="m-0 mb-2 text-gray-dark text-lg font-semibold">Data Protection</h3>
+                  <p className="m-0 text-gray-text leading-relaxed">
+                    Your todos are private and only accessible to you.
                     All data is encrypted and securely stored.
                   </p>
                 </div>
@@ -54,131 +54,6 @@ export function AccountPage() {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .account-page {
-          max-width: 800px;
-          margin: 0 auto;
-        }
-
-        .account-container {
-          background: white;
-          border-radius: 8px;
-          border: 1px solid #e1e5e9;
-          overflow: hidden;
-        }
-
-        .account-header {
-          padding: 2rem;
-          border-bottom: 1px solid #e1e5e9;
-          background: #f6f8fa;
-        }
-
-        .account-header h1 {
-          margin: 0 0 0.5rem 0;
-          color: #24292f;
-          font-size: 1.75rem;
-          font-weight: 600;
-        }
-
-        .account-header p {
-          margin: 0;
-          color: #656d76;
-          font-size: 1rem;
-        }
-
-        .account-content {
-          padding: 2rem;
-        }
-
-        .info-section {
-          margin-bottom: 2rem;
-        }
-
-        .info-section:last-child {
-          margin-bottom: 0;
-        }
-
-        .info-section h2 {
-          margin: 0 0 1rem 0;
-          color: #24292f;
-          font-size: 1.25rem;
-          font-weight: 600;
-        }
-
-        .info-grid {
-          display: grid;
-          gap: 1rem;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        }
-
-        .info-item {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .info-item label {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #656d76;
-        }
-
-        .info-value {
-          font-size: 1rem;
-          color: #24292f;
-          font-weight: 500;
-        }
-
-        .security-info {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-
-        .security-item {
-          display: flex;
-          gap: 1rem;
-          padding: 1.5rem;
-          background: #f6f8fa;
-          border-radius: 8px;
-          border: 1px solid #e1e5e9;
-        }
-
-        .security-icon {
-          font-size: 2rem;
-          flex-shrink: 0;
-        }
-
-        .security-content h3 {
-          margin: 0 0 0.5rem 0;
-          color: #24292f;
-          font-size: 1.125rem;
-          font-weight: 600;
-        }
-
-        .security-content p {
-          margin: 0;
-          color: #656d76;
-          line-height: 1.5;
-        }
-
-        @media (max-width: 768px) {
-          .account-header,
-          .account-content {
-            padding: 1.5rem;
-          }
-
-          .security-item {
-            flex-direction: column;
-            text-align: center;
-          }
-
-          .security-icon {
-            align-self: center;
-          }
-        }
-      `}</style>
     </div>
   );
 }

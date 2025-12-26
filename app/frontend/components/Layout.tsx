@@ -12,32 +12,40 @@ export function Layout() {
   };
 
   return (
-    <div className="app-layout">
-      <header className="app-header">
-        <div className="header-content">
-          <Link to="/" className="app-title">
-            <h1>Passkey ToDo Board</h1>
+    <div className="min-h-screen bg-gray-light">
+      <header className="bg-white border-b border-gray-border-light py-4">
+        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
+          <Link to="/" className="no-underline text-inherit">
+            <h1 className="m-0 text-gray-dark text-2xl font-semibold">Passkey ToDo Board</h1>
           </Link>
-          <nav className="header-nav">
-            <NavLink 
-              to="/" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          <nav className="flex items-center gap-8">
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `text-gray-text no-underline font-medium py-2 border-b-2 transition-all duration-200 hover:text-gray-dark ${
+                  isActive ? 'text-primary border-primary' : 'border-transparent'
+                }`
+              }
               end
             >
               Todos
             </NavLink>
-            <NavLink 
-              to="/account" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            <NavLink
+              to="/account"
+              className={({ isActive }) =>
+                `text-gray-text no-underline font-medium py-2 border-b-2 transition-all duration-200 hover:text-gray-dark ${
+                  isActive ? 'text-primary border-primary' : 'border-transparent'
+                }`
+              }
             >
               Account
             </NavLink>
-            <div className="header-actions">
-              <span className="user-info">User #{user?.id}</span>
+            <div className="flex items-center gap-4">
+              <span className="text-gray-text text-sm">User #{user?.id}</span>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="logout-button"
+                className="btn-outline py-2 px-4"
               >
                 Sign Out
               </button>
@@ -45,102 +53,10 @@ export function Layout() {
           </nav>
         </div>
       </header>
-      
-      <main className="app-main">
+
+      <main className="max-w-6xl mx-auto py-8 px-4">
         <Outlet />
       </main>
-
-      <style jsx>{`
-        .app-layout {
-          min-height: 100vh;
-          background: #f6f8fa;
-        }
-
-        .app-header {
-          background: white;
-          border-bottom: 1px solid #e1e5e9;
-          padding: 1rem 0;
-        }
-
-        .header-content {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .app-title {
-          text-decoration: none;
-          color: inherit;
-        }
-
-        .app-title h1 {
-          margin: 0;
-          color: #24292f;
-          font-size: 1.5rem;
-          font-weight: 600;
-        }
-
-        .header-nav {
-          display: flex;
-          align-items: center;
-          gap: 2rem;
-        }
-
-        .nav-link {
-          color: #656d76;
-          text-decoration: none;
-          font-weight: 500;
-          padding: 0.5rem 0;
-          border-bottom: 2px solid transparent;
-          transition: all 0.2s;
-        }
-
-        .nav-link:hover {
-          color: #24292f;
-        }
-
-        .nav-link.active {
-          color: #0969da;
-          border-bottom-color: #0969da;
-        }
-
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .user-info {
-          color: #656d76;
-          font-size: 0.875rem;
-        }
-
-        .logout-button {
-          padding: 0.5rem 1rem;
-          border: 1px solid #d1d9e0;
-          border-radius: 6px;
-          background: white;
-          color: #24292f;
-          font-size: 0.875rem;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .logout-button:hover {
-          background: #f6f8fa;
-          border-color: #bbb;
-        }
-
-        .app-main {
-          padding: 2rem 0;
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 2rem 1rem;
-        }
-      `}</style>
     </div>
   );
 }

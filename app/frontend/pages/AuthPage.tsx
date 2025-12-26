@@ -10,7 +10,6 @@ export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirect to intended page or home when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       const from = (location.state as any)?.from?.pathname || '/';
@@ -18,37 +17,40 @@ export function AuthPage() {
     }
   }, [isAuthenticated, navigate, location]);
 
-  // Don't render anything if authenticated (will redirect)
   if (isAuthenticated) {
     return null;
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-header">
-          <h1>Passkey ToDo Board</h1>
-          <p>Secure, passwordless task management</p>
+    <div className="min-h-screen bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8 text-white">
+          <h1 className="m-0 mb-2 text-3xl font-bold  text-white!">Passkey ToDo Board</h1>
+          <p className="m-0 text-lg text-white!">Secure, passwordless task management</p>
         </div>
 
-        <div className="auth-tabs">
+        <div className="flex bg-white/10 rounded-lg p-1 mb-6">
           <button
             type="button"
-            className={`tab-button ${mode === 'login' ? 'active' : ''}`}
+            className={`flex-1 py-3 px-4 border-none bg-transparent text-white text-sm font-medium rounded-md cursor-pointer transition-all duration-200 hover:bg-white/10 ${
+              mode === 'login' ? 'bg-white text-indigo-500!' : ''
+            }`}
             onClick={() => setMode('login')}
           >
             Sign In
           </button>
           <button
             type="button"
-            className={`tab-button ${mode === 'register' ? 'active' : ''}`}
+            className={`flex-1 py-3 px-4 border-none bg-transparent text-white text-sm font-medium rounded-md cursor-pointer transition-all duration-200 hover:bg-white/10 ${
+              mode === 'register' ? 'bg-white text-indigo-500!' : ''
+            }`}
             onClick={() => setMode('register')}
           >
             Create Account
           </button>
         </div>
 
-        <div className="auth-content">
+        <div className="mb-6">
           {mode === 'login' ? (
             <PasskeyAuthentication />
           ) : (
@@ -56,12 +58,12 @@ export function AuthPage() {
           )}
         </div>
 
-        <div className="auth-footer">
-          <p>
+        <div className="text-center text-white">
+          <p className="m-0 text-white!">
             {mode === 'login' ? "Don't have an account? " : "Already have an account? "}
             <button
               type="button"
-              className="link-button"
+              className="bg-transparent border-none text-white underline cursor-pointer p-0 hover:opacity-80"
               onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
             >
               {mode === 'login' ? 'Create one' : 'Sign in'}
@@ -69,98 +71,6 @@ export function AuthPage() {
           </p>
         </div>
       </div>
-
-      <style jsx>{`
-        .auth-page {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 1rem;
-        }
-
-        .auth-container {
-          width: 100%;
-          max-width: 480px;
-        }
-
-        .auth-header {
-          text-align: center;
-          margin-bottom: 2rem;
-          color: white;
-        }
-
-        .auth-header h1 {
-          margin: 0 0 0.5rem 0;
-          font-size: 2rem;
-          font-weight: 700;
-        }
-
-        .auth-header p {
-          margin: 0;
-          opacity: 0.9;
-          font-size: 1.1rem;
-        }
-
-        .auth-tabs {
-          display: flex;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          padding: 0.25rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .tab-button {
-          flex: 1;
-          padding: 0.75rem 1rem;
-          border: none;
-          background: transparent;
-          color: white;
-          font-size: 0.875rem;
-          font-weight: 500;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .tab-button:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .tab-button.active {
-          background: white;
-          color: #667eea;
-        }
-
-        .auth-content {
-          margin-bottom: 1.5rem;
-        }
-
-        .auth-footer {
-          text-align: center;
-          color: white;
-        }
-
-        .auth-footer p {
-          margin: 0;
-          opacity: 0.9;
-        }
-
-        .link-button {
-          background: none;
-          border: none;
-          color: white;
-          text-decoration: underline;
-          cursor: pointer;
-          font-size: inherit;
-          padding: 0;
-        }
-
-        .link-button:hover {
-          opacity: 0.8;
-        }
-      `}</style>
     </div>
   );
 }
